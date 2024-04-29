@@ -13,12 +13,14 @@ class Manager():
             if system_cpu_usage < 80.0 and system_mem_usage < 80.0:
                 # Running a podman container and capturing the container ID
                 print(f"Starting container: {container_name}")
-                result = subprocess.run(self.get_container_command("renderserver-meta", container_name, "2g", (0,1), False
-                ),
-                                        capture_output=True, text=True, check=True)
+                process = await asyncio.create_subprocess_exec(self.get_container_command("renderserver-meta", container_name, "2g", (0,1), False
+                                                        ),
+                                                        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
 
                 # Extract the container ID from the command output
-                container_id = result.stdout.strip()
+                stdout, sdterr = await process.communicate()
+                print("Process returned with:", stdout)
+                container_id = stdout.strip()
                 new_container = Container(container_name, container_id)
                 self.running_containers.append(new_container)
 
@@ -90,9 +92,7 @@ class Manager():
             print("Job triggered!")
             # Run the container - replace 'python:3.8-slim' with your specific container
             await self.spawn_container("python:3.8-slim")
-        else:
-            print("No job triggered.")
-        await asyncio.sleep(5)  # Wait a bit before checking again
+            await asyncio.sleep(5)  # Wait a bit before checking again
 
 class Container:
     def __init__(self, name, id, mem="2g", cpuset=(8), gpu=False):
