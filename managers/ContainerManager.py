@@ -24,46 +24,46 @@ class Manager:
                 print(f"An error occurred while running the container: {e}")
 
     def get_container_command(self, hostname, name, memory, cpuset, gpu):
-        command_args = []
-        command_args.append(f'podman')
-        command_args.append(f'run')
-        command_args.extend([f'--name "{name}"'])
-        command_args.extend([f'--hostname "{hostname}"'])
-        command_args.append(f'--userns=keep-id')
+        command = [
+            'podman', 'run',
+            '--name', name,  # No extra quotes
+            '--hostname', hostname,  # No extra quotes
+            '--userns=keep-id',
+            '--umask=0002',
+            '--net=host',
+            '-e', f'CONTAINER_NAME={name}',  # No extra quotes, directly assign
+            '-e', 'foundry_LICENSE=4101@100.68.207.27',  # Corrected format
+            '-e', 'PATH=$PATH:/opt/Thinkbox/Deadline10/bin/',  # Corrected format
+            '-e', 'LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH',  # Corrected format
+            '-e', 'NUKE_PATH=$NUKE_PATH:/mnt/x/PROJECTS/software/nuke',  # Corrected format
+            '-e', 'HOME=/root',  # Corrected format
+            '-e', 'pixelmania_LICENSE=5053@pixelmanialic',  # Corrected format
+            '-v', '/etc/group:/etc/group',
+            '-v', '/etc/passwd:/etc/passwd',
+            '-v', '/mnt/x:/mnt/x',
+            '-v', '/mnt/data:/mnt/data',
+            '-v', '/opt/Nuke/Nuke13.2v4:/opt/Nuke/Nuke13.2v4',
+            '-v', '/opt/Nuke/Nuke14.0v2:/opt/Nuke/Nuke14.0v2',
+            '-v', '/opt/hfs20.0.590:/opt/hfs20.0.590',
+            '-v', '/etc/init.d:/etc/init.d',
+            '-v', '/usr/lib:/usr/lib',
+            '-v', '/usr/lib/sesi:/usr/lib/sesi',
+            '-v', '/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu',
+            '-v', '/usr/local:/usr/local',
+            '-v', '/usr/share/fonts:/usr/share/fonts',
+            '-v', '/home/sadmin:/home/sadmin',
+            '-v', '/root:/root',
+            '-v', '/sys:/sys',
+            '--memory', memory,
+            '--memory-swap', memory,
+            '--cpuset-cpus', f'{cpuset[0]}-{cpuset[1]}',
+            '--rm',
+            '--replace',
+            'localhost/deadline_runner_ubuntu', './startup.sh'
+        ]
         if gpu:
-            command_args.extend([f'--device "nvidia.com/gpu=0"'])
-        command_args.append(f'--umask=0002')
-        command_args.append(f'--net=host')
-        command_args.extend([f'-e CONTAINER_NAME="{name}"'])
-        command_args.extend([f'-e foundry_LICENSE="4101@100.68.207.27"'])
-        command_args.extend([f'-e PATH="$PATH:/opt/Thinkbox/Deadline10/bin/"'])
-        command_args.extend([f'-e LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"'])
-        command_args.extend([f'-e NUKE_PATH="$NUKE_PATH:/mnt/x/PROJECTS/software/nuke"'])
-        command_args.extend([f'-e HOME="/root"'])
-        command_args.extend([f'-e pixelmania_LICENSE="5053@pixelmanialic"'])
-        command_args.extend([f'-v /etc/group:/etc/group'])
-        command_args.extend([f'-v /etc/passwd:/etc/passwd'])
-        command_args.extend([f'-v /mnt/x:/mnt/x'])
-        command_args.extend([f'-v /mnt/data:/mnt/data'])
-        command_args.extend([f'-v /opt/Nuke/Nuke13.2v4:/opt/Nuke/Nuke13.2v4'])
-        command_args.extend([f'-v /opt/Nuke/Nuke14.0v2:/opt/Nuke/Nuke14.0v2'])
-        command_args.extend([f'-v /opt/hfs20.0.590:/opt/hfs20.0.590'])
-        command_args.extend([f'-v /etc/init.d:/etc/init.d'])
-        command_args.extend([f'-v /usr/lib:/usr/lib'])
-        command_args.extend([f'-v /usr/lib/sesi:/usr/lib/sesi'])
-        command_args.extend([f'-v /lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu'])
-        command_args.extend([f'-v /usr/local:/usr/local'])
-        command_args.extend([f'-v /usr/share/fonts:/usr/share/fonts'])
-        command_args.extend([f'-v /home/sadmin:/home/sadmin'])
-        command_args.extend([f'-v /root:/root'])
-        command_args.extend([f'-v /sys:/sys'])
-        command_args.append(f'--memory="{memory}"')
-        command_args.append(f'--memory-swap "{memory}"')
-        command_args.append(f'--cpuset-cpus="{cpuset[0]}-{cpuset[1]}"')
-        command_args.append(f'--rm')
-        command_args.append(f'--replace')
-        command_args.append(f'localhost/deadline_runner_ubuntu')
-        command_args.append(f'./startup.sh &')
+            command.append('--device=nvidia.com/gpu=0')
+        return command
 
         return command_args
     def get_system_usage(self):
