@@ -1,12 +1,15 @@
 import subprocess
 import time
 import psutil
+import os
 import asyncio
 
 class Manager:
     def __init__(self):
         self.running_containers = []
         self.job_trigger_event = False
+        self.MANAGER_ROOT = os.getcwd()
+        print(self.MANAGER_ROOT)
 
     def spawn_container(self, container_name):
         system_cpu_usage, system_mem_usage = self.get_system_usage()
@@ -60,7 +63,7 @@ class Manager:
             '--cpuset-cpus', f'{cpuset[0]}-{cpuset[1]}',
             '--rm',
             '--replace',
-            'localhost/deadline_runner_ubuntu', './startup.sh'
+            'localhost/deadline_runner_ubuntu', f'{self.MANAGER_ROOT}/startup.sh'
         ]
         if gpu:
             command.append('--device=nvidia.com/gpu=0')
@@ -91,7 +94,7 @@ class Manager:
                 print("Job triggered!")
                 # Run the container - replace 'python:3.8-slim' with your specific container
                 self.spawn_container("2g_1_0")
-                time.sleep(5)  # Wait a bit before checking again
+            time.sleep(5)  # Wait a bit before checking again
 
 class Container:
     def __init__(self, name, id, mem="2g", cpuset=(8), gpu=False):
