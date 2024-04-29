@@ -3,30 +3,25 @@ import time
 import psutil
 import asyncio
 
-class Manager():
+class Manager:
     def __init__(self):
         self.running_containers = []
-        self.job_event = asyncio.Event()
-    async def spawn_container(self, container_name):
-        try:
-            system_cpu_usage, system_mem_usage = self.get_system_usage()
-            if system_cpu_usage < 80.0 and system_mem_usage < 80.0:
-                # Running a podman container and capturing the container ID
+        self.job_trigger_event = False
+
+    def spawn_container(self, container_name):
+        system_cpu_usage, system_mem_usage = self.get_system_usage()
+        if system_cpu_usage < 80.0 and system_mem_usage < 80.0:
+            try:
                 print(f"Starting container: {container_name}")
-                process = await asyncio.create_subprocess_exec(self.get_container_command("renderserver-meta", container_name, "2g", (0,1), False
-                                                        ),
-                                                        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-
-                # Extract the container ID from the command output
-                stdout, sdterr = await process.communicate()
-                print("Process returned with:", stdout)
-                container_id = stdout.strip()
-                new_container = Container(container_name, container_id)
-                self.running_containers.append(new_container)
-
+                result = subprocess.run(
+                    self.get_container_command("renderserver-meta", container_name, "2g", (0, 1), False),
+                    capture_output=True, text=True, check=True
+                )
+                container_id = result.stdout.strip()
+                self.running_containers.append(Container(container_name, container_id))
                 print(f"Container {container_id} started successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred while running the container: {e}")
+            except subprocess.CalledProcessError as e:
+                print(f"An error occurred while running the container: {e}")
 
     def get_container_command(self, hostname, name, memory, cpuset, gpu):
         command_args = []
@@ -79,20 +74,21 @@ class Manager():
 
         return cpu_usage, memory_usage
 
-    async def on_job_trigger(self):
+    def on_job_trigger(self):
         # Placeholder function for job triggering
         # Replace this with actual event checking logic
-        await asyncio.sleep(1)  # Simulate waiting for a trigger
-        await self.job_event.set()
+        time.sleep(1)  # Simulate waiting for a trigger
+        self.job_trigger_event = True
 
-    async def run(self):
+    def run(self):
         while True:
             print("Service is checking for jobs...")
-            await self.job_event.wait()
-            print("Job triggered!")
-            # Run the container - replace 'python:3.8-slim' with your specific container
-            await self.spawn_container("python:3.8-slim")
-            await asyncio.sleep(5)  # Wait a bit before checking again
+            if self.job_trigger_event:
+                self.job_trigger_event = False
+                print("Job triggered!")
+                # Run the container - replace 'python:3.8-slim' with your specific container
+                self.spawn_container("2g_1_0")
+                time.sleep(5)  # Wait a bit before checking again
 
 class Container:
     def __init__(self, name, id, mem="2g", cpuset=(8), gpu=False):
@@ -103,10 +99,7 @@ class Container:
         self.gpu = gpu
         self.markedForShutdown = False
 
-async def main():
-    mng = Manager()
-    await mng.run()
-    await mng.on_job_trigger()
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    mng = Manager()
+    mng.on_job_trigger()
+    mng.run()
