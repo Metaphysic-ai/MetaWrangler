@@ -20,6 +20,8 @@ class Manager:
                     self.get_container_command("renderserver-meta", container_name, "2g", (120, 121), False),
                     capture_output=True, text=True, check=True
                 )
+                print("STDOUT:", result.stdout)
+                print("STDERR:", result.stderr)
                 container_id = result.stdout.strip()
                 self.running_containers.append(Container(container_name, container_id))
                 print(f"Container {container_id} started successfully.")
