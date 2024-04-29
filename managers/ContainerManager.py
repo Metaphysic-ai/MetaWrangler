@@ -14,7 +14,7 @@ class Manager:
             try:
                 print(f"Starting container: {container_name}")
                 result = subprocess.run(
-                    self.get_container_command("renderserver-meta", container_name, "2g", (0, 1), False),
+                    self.get_container_command("renderserver-meta", container_name, "2g", (120, 121), False),
                     capture_output=True, text=True, check=True
                 )
                 container_id = result.stdout.strip()
@@ -31,6 +31,7 @@ class Manager:
             '--userns=keep-id',
             '--umask=0002',
             '--net=host',
+            '--log-level=debug',
             '-e', f'CONTAINER_NAME={name}',  # No extra quotes, directly assign
             '-e', 'foundry_LICENSE=4101@100.68.207.27',  # Corrected format
             '-e', 'PATH=$PATH:/opt/Thinkbox/Deadline10/bin/',  # Corrected format
