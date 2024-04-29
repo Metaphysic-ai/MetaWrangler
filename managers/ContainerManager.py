@@ -86,10 +86,10 @@ class Manager():
     async def run(self):
         while True:
             print("Service is checking for jobs...")
-            await mng.job_event.wait()
+            await self.job_event.wait()
             print("Job triggered!")
             # Run the container - replace 'python:3.8-slim' with your specific container
-            await mng.spawn_container("python:3.8-slim")
+            await self.spawn_container("python:3.8-slim")
         else:
             print("No job triggered.")
         await asyncio.sleep(5)  # Wait a bit before checking again
