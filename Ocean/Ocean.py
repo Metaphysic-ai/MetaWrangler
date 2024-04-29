@@ -8,7 +8,10 @@ class Node:
         self.knobs = knobs
         self.num_inputs = num_inputs
         self.root_node = None
-        self.outputs = [[]]
+        self.out_nodes = []
+        self.in_nodes = []
+    def __repr__(self):
+        return f'Node(\'{self.type}\', {self.name})'
 
 class NukeScript:
     def __init__(self):
@@ -16,9 +19,13 @@ class NukeScript:
 
 class Graph:
     def __init__(self, script):
+        self.is_constructing = True
+        self.graph_dict = {}
         self.script = script
-        self.window_layout = {}
+        self.stack = []
+        self.simplifiedDAG = []
         self.nodes = self.fill_graph_from_script()
+
 
     def fill_graph_from_script(self):
         # "/mnt/x/PROJECTS/romulus/sequences/and/and_2000/comp/work/nuke/debug/and_2000_metawranglerTest.v002.nk"
@@ -34,17 +41,20 @@ class Graph:
             nuke_raw = nuke_raw.replace("\n\n", "\n")
             type = nuke_raw.split(" ")[0]
             knobs = {}
-            inputs = None
+            inputs = 1
             for line in nuke_raw.split(";"):
                 line = line.strip()
                 if line.startswith("inputs"):
-                    inputs = line.split(" ")[-1]
+                    inputs = int(line.split(" ")[-1].split("+")[0]) ### Figure out what exactly inputs like "4+1" mean, I assume its just "hanging" inputs that can be ignored.
                 if line.endswith("}") and not line.startswith(type):
                     continue  # addUserKnob stuff
                 knob_name = line.split(" ")[0]
                 knob_args = " ".join(line.split(" ")[1:])
                 knobs[knob_name] = knob_args
-            name = knobs["name"]
+            if "name" in knobs:
+                name = knobs["name"]
+            else:
+                name = ""
             return Node(name=name, type=type, knobs=knobs, num_inputs=inputs)
 
         def find_word_before_brace(text):
@@ -55,6 +65,7 @@ class Graph:
             return match.group(0) if match else None
 
         with open(self.script, "r") as f:
+            got_version = False
             for n, line in enumerate(f.readlines()):
                 node_found = find_word_before_brace(line)
                 if line.strip().endswith("[stack 0]"):
@@ -63,9 +74,10 @@ class Graph:
                     nodes_raw_text.append(line.strip()+"; ")
                 if node_found:
                     current_node_type = node_found
-                if line.startswith("version 1"):
+                if line.startswith("version 1") and not got_version:
                     version_major = line.split(" ")[1]
                     version_minor = line.split(" ")[2]
+                    got_version = True ### to avoid some node randomly starting with that string
                 # elif line.startswith("define_window_layout_xml"):
                 #     window_layout_string = line.split(" ")[0]
                 #     buffer.append(line.split(" ")[1]+"\n")
@@ -90,148 +102,65 @@ class Graph:
                 continue
             node = parse_raw_text(node_raw)
             stack_instructions.append({"place_node": node})
-        self.construct_stack(stack_instructions)
+        self.construct_dag(stack_instructions, simplified=True)
 
-    def construct_stack(self, stack_instructions):
-        # for instruction in stack_instructions:
-        #     if 'place_node' in instruction:
-        #         for k, v in instruction.items():
-        #             print(k, v.name)
-        #     else:
-        #         for k, v in instruction.items():
-        #             print(k, v)
-        # stack = {} # {NodeName: {output_key: [outputs]}}
-        # saved_heads = {"DEFAULT": []}
-        # head_stack = ["DEFAULT"]
-        # previous_node = {"name": ""}
-        # node_lookup = {}
-        # for n, instruction in enumerate(stack_instructions):
-        #     print("###########")
-        #     if "place_node" in instruction:
-        #         print(instruction["place_node"].name)
-        #     else:
-        #         print(instruction)
-        #     print(stack)
-        #     print(saved_heads)
-        #     print(head_stack)
-        #     print(previous_node)
-        #     if 'set' in instruction:
-        #         saved_heads[instruction["set"]].append(previous_node.name)
-        #         head_stack.append(instruction["set"])
-        #     if 'push' in instruction:
-        #         if instruction["push"][1:] in saved_heads:
-        #             del saved_heads[instruction["push"][1:]]
-        #             head_stack.pop()
-        #     if 'place_node' in instruction:
-        #         if "node" in locals():
-        #             previous_node = node
-        #         node = instruction["place_node"]
-        #         node_lookup[node.name] = node
-        #         if node.num_inputs == "0":
-        #             inputs = 0
-        #             stack[node.name] = {"DEFAULT": []}
-        #             saved_heads["DEFAULT"].append(node.name)
-        #             node.root_node = node.name
-        #         if node.num_inputs is None:
-        #             inputs = 1
-        #         else:
-        #             inputs = int(node.num_inputs)
-        #         for input in range(inputs):
-        #             head_node = saved_heads[head_stack[-1]][-1-input]
-        #             node.root_node = node_lookup[head_node].root_node
-        #             stack[node.root_node][head_stack[-1]].append(node.name)
-        #         saved_heads[head_stack[-1]].append(node.name)
+    def construct_dag(self, stack_instructions, simplified=True):
+        if simplified:
+            for instruction in stack_instructions:
+                if "place_node" in instruction:
+                    self.simplifiedDAG.append(instruction["place_node"])
+        else:
+            # print(stack_instructions)
+            while stack_instructions:
+                next_instruction = stack_instructions.pop(0)
+                self.execute_instruction(next_instruction)
+                # print("Stack Status:", self.stack)
 
 
-        stack = {}
-        heads = [] # [{head_index: head}]
-        multi_inputs = [0]
-        previous_node = ""
-        triggerMerge = False
-        checkpoints = []
-        num_checkpoints = 0
-        for n, instruction in enumerate(stack_instructions):
+    def execute_instruction(self, instruction):
+        if "set" in instruction.keys():
+            self.stack.append(["$"+instruction['set'], [self.stack[-1][0]]]) ### Set checkpoint address to last node entry, "$" to signify its a reroute address
+        if "push" in instruction.keys():
+            if instruction['push'] == "0":
+                self.stack.append(["", [""]]) ### Null pointer to "shield" instruction before it from pop()
+            else:
+                self.stack.append(["",[instruction['push']]]) ### Adds empty slot that points to address, to be filled with next node, will match the ones from the set instruction
+        if 'place_node' in instruction.keys():
+            node = instruction['place_node']
+            if node.num_inputs == 0:
+                if self.stack:
+                    self.stack.pop(-1)
+                self.stack.append([node.name, []]) ### If Node has no inputs, pop last entry from stack and add it as new root node
+            if node.num_inputs > 0:
+                list_in_nodes = []
+                for inputs in range(1, node.num_inputs+1):
+                    n = 1
+                    while True:
+                        stack_address = self.stack[-n][0]
+                        if stack_address == "": ### instruction right after a push instruction attaches itself to the reroute address.
+                            self.stack[-n][0] = node.name ### insert itself into the rerouting address
+                            for in_address in self.stack[-n][1]: ### replace rerouting address with actual node address.
+                                if in_address.startswith("$"):
+                                    for reroute in self.stack:
+                                        if reroute[0] == in_address:
+                                            self.stack[-n][1] = [reroute[1][0]] ### can you go deeper with the nested loops, I'm not sure
+                                            list_in_nodes.append(reroute[1][0])
+                                            n += 1
+                                            break
 
-            if 'set' in instruction:
-                multi_inputs.append(len(heads))
-                triggerMerge = True
-                num_checkpoints += 1
-            if 'push' in instruction:
-                multi_inputs.pop()
-                checkpoints.pop()
-                num_checkpoints -= 1
-            if 'place_node' in instruction:
-                if "node" in locals():
-                    previous_node = node
-                node = instruction["place_node"]
-                if node.type == "Root":
-                    stack[node.name] = [[]]
-                elif n != 0:
+                        elif stack_address.startswith("$"): ### only use rerouting after push instruction
+                            n += 1
+                            break
 
-                    if node.num_inputs == "0":
-                        stack[node.name] = [[]]
-                        heads.append({"root": node.name, "head": node.name})
-                        multi_inputs[0] = len(heads)-1
-                    else:
-                        if node.num_inputs is None:
-                            _inputs = 1
                         else:
-                            _inputs = int(node.num_inputs)
-                        clear_heads = True if _inputs > 1 else False
-                        for input in range(_inputs):
-                            if _inputs > 1:
-                                for n_multi, multi_index in enumerate(multi_inputs):
-                                    if node.name not in stack:
-                                        stack[node.name] = [[]]
-                                    heads[-1 - input]["head"] = node.name
-                                    if n_multi > 0:
-                                        stack[heads[-1 - input]["root"]].append([])
-                                    stack[heads[-1 - input]["root"]][n_multi].extend([node.name])
-                            # heads.append({"root": heads[-1]["root"], "head": node.name})
-                            else:
-                                if len(multi_inputs) == 1:
-                                    heads[-1-input]["head"] = node.name
-                                    # stack[heads[-1 - input]["root"]].append([])
-                                    stack[heads[-1-input]["root"]][-1].extend([node.name])
-                                else:
-                                    # heads.append({'root': heads[-1-input]["root"], "head": node.name})
-                                    # heads.append({'root': heads[multi_inputs[n_multi]]["head"], "head": node.name})
-                                    if triggerMerge:
-                                        count_equal = {}
-                                        for head in heads:
-                                            if not head["head"] in count_equal:
-                                                count_equal[head["head"]] = 0
-                                            else:
-                                                count_equal[head["head"]] += 1
-                                        for _ in range(_inputs):
-                                            heads.pop()
-                                        heads.append({'root': previous_node.name, "head": previous_node.name})
-                                        checkpoints.append(heads[-1])
-                                        triggerMerge = False
-                                    found = False
-                                    added = False
-                                    for n, endpoint in enumerate(stack[heads[-1 - input]["root"]]):
-                                        if heads[-1-input]["head"] in endpoint:
-                                            found = True
-                                            stack[heads[-1 - input]["root"]][n].extend([node.name])
-                                            added = True
-                                    if not found:
-                                        stack[heads[-1 - input]["root"]][-1-input].extend([node.name])
-                                        added = True
-                                    if checkpoints:
-                                        if len(stack[checkpoints[-1]["head"]]) < len(multi_inputs):
-                                            stack[checkpoints[-1]["head"]].append([])
-                                            heads.append({'root': checkpoints[-1]["root"], 'head': node.name})
-                                            continue
-                                        if num_checkpoints > 0 and not added:
-                                            stack[checkpoints[-1]["head"]][num_checkpoints].extend([node.name])
-                                    # for n_multi, multi_index in enumerate(multi_inputs):
-                                    #     if len(stack[heads[-1 - n_multi]["head"]]) < len(multi_inputs):
-                                    #         stack[heads[-1 - n_multi]["head"]].append([])
-
-
-        for k, v in stack.items():
-            print("####", k, "outputs:", v)
+                            list_in_nodes.append(stack_address)
+                            del self.stack[-n]
+                            n += 1
+                            break
+                out_list = [node.name]
+                out_list.append(list_in_nodes)
+                self.stack.append(out_list)
+                list_in_nodes = [] ### flush
 
     def find_path(self, graph, start, end, path=[]):
         path = path + [start]
@@ -259,4 +188,5 @@ class Graph:
                     paths.append(newpath)
         return paths
 
-graph = Graph("/mnt/x/PROJECTS/romulus/sequences/and/and_2000/comp/work/nuke/debug/and_2000_metawranglerTest.v005.nk")
+# graph = Graph("/mnt/x/PROJECTS/romulus/sequences/and/and_2000/comp/work/nuke/debug/and_2000_metawranglerTest.v011.nk")
+# graph = Graph("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-WIP/wro_6300_debugDaniel.v001.nk")
