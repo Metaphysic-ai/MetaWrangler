@@ -103,7 +103,10 @@ class Container:
         self.gpu = gpu
         self.markedForShutdown = False
 
-if __name__ == "__main__":
+async def main():
     mng = Manager()
-    mng.run()
-    mng.on_job_trigger()
+    await mng.run()
+    await mng.on_job_trigger()
+
+if __name__ == "__main__":
+    asyncio.run(main())
