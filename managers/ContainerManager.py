@@ -67,6 +67,44 @@ class Manager:
             '--replace',
             'localhost/deadline_runner_ubuntu', f'{self.MANAGER_ROOT}/startup.sh'
         ]
+        command = f"""
+        podman run \
+        --name {name} \
+        --hostname {hostname} \
+        --userns=keep-id \
+        --umask=0002 \
+        --net=host \
+        --log-level=debug \
+        -e CONTAINER_NAME={name} \
+        -e foundry_LICENSE=4101@100.68.207.27 \
+        -e PATH=$PATH:/opt/Thinkbox/Deadline10/bin/ \
+        -e LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH \
+        -e NUKE_PATH=$NUKE_PATH:/mnt/x/PROJECTS/software/nuke \
+        -e HOME=/root \
+        -e pixelmania_LICENSE=5053@pixelmanialic \
+        -v /etc/group:/etc/group \
+        -v /etc/passwd:/etc/passwd \
+        -v /mnt/x:/mnt/x \
+        -v /mnt/data:/mnt/data \
+        -v /opt/Nuke/Nuke13.2v4:/opt/Nuke/Nuke13.2v4 \
+        -v /opt/Nuke/Nuke14.0v2:/opt/Nuke/Nuke14.0v2 \
+        -v /opt/hfs20.0.590:/opt/hfs20.0.590 \
+        -v /etc/init.d:/etc/init.d \
+        -v /usr/lib:/usr/lib \
+        -v /usr/lib/sesi:/usr/lib/sesi \
+        -v /lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu \
+        -v /usr/local:/usr/local \
+        -v /usr/share/fonts:/usr/share/fonts \
+        -v /home/sadmin:/home/sadmin \
+        -v /root:/root \
+        -v /sys:/sys \
+        --memory {memory} \
+        --memory-swap {memory} \
+        --cpuset-cpus '{cpuset[0]}-{cpuset[1]}' \
+        --rm \
+        --replace \
+        localhost/deadline_runner_ubuntu {self.MANAGER_ROOT}/startup.sh
+        """
         if gpu:
             command.append('--device=nvidia.com/gpu=0')
         return command
