@@ -17,7 +17,7 @@ class Manager:
             try:
                 print(f"Starting container: {container_name}")
                 result = subprocess.run(
-                    self.get_container_command("renderserver-meta", container_name, "2g", (120, 121), False),
+                    self.get_container_command("renderservermeta", container_name, "2g", (120, 121), False),
                     capture_output=True, text=True, check=True
                 )
                 print("STDOUT:", result.stdout)

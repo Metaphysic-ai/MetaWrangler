@@ -87,7 +87,8 @@ class DeadlineCon:
         return self.connectionProperties.AuthenticationEnabled()
 
     def Entrypoint(self, job_id):
-        file_path = "~/job_{}.txt".format(job_id)
-        with open(file_path, 'w') as file:
-            file.write(job_id)
-        return "Job ID written successfully"
+        pass
+        # file_path = "~/job_{}.txt".format(job_id)
+        # with open(file_path, 'w') as file:
+        #     file.write(job_id)
+        # return "Job ID written successfully"
