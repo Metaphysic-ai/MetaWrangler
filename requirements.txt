@@ -1,8 +1,11 @@
-langchain==0.1.16
-langchain_community==0.0.34
+GPUtil==1.4.0
+GPUtil==1.4.0
+langchain==0.1.17
+langchain_community==0.0.36
 llama_index==0.10.33
+numpy==1.25.1
 numpy==1.24.4
-pandas==2.0.3
+pandas==2.2.2
 psutil==5.9.8
 pyOpenSSL==24.1.0
 pyOpenSSL==24.1.0

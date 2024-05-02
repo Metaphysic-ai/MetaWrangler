@@ -6,9 +6,18 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 from managers.ContainerManager import ContainerManager
 
+class TaskEvent():
+    def __init__(self, id, mem, cpus, gpu):
+        self.id = id
+        self.required_mem = mem
+        self.required_cpus = cpus
+        self.required_gpu = gpu
+
 class MetaWrangler():
     def __init__(self):
         self.con = Connect(self.get_local_ip(), 8081)
+        self.task_event_stack = []
+        self.task_event_history = {}
 
     def get_local_ip(self):
         import socket
@@ -233,20 +242,45 @@ class MetaWrangler():
     def get_task(self, jid, tid):
         return self.con.Tasks.GetJobTask(jid, tid)
 
+    def create_task_event(self, id, mem, cpus, gpu):
+        task_event = TaskEvent(id, mem, cpus, gpu)
+        self.task_event_stack.append(task_event)
+
     def run(self):
-        try:
-            while True:
-                print(self.get_running_jobs())  # Execute your periodic task
-                time.sleep(10)   # Wait for 10 seconds before the next execution
-        except KeyboardInterrupt:
-            print("Stopped by user.")
+        import socket
+        hostname = socket.gethostname()
+
+        mng = ContainerManager(self)
+        self.create_task_event(id=0, mem=2, cpus=1, gpu=False)
+        self.create_task_event(id=1, mem=8, cpus=4, gpu=False)
+        self.create_task_event(id=2, mem=32, cpus=8, gpu=False)
+        self.create_task_event(id=3, mem=8, cpus=4, gpu=True)
+        self.create_task_event(id=4, mem=32, cpus=8, gpu=True)
+        self.create_task_event(id=5, mem=32, cpus=120, gpu=True)
+        self.create_task_event(id=6, mem=2, cpus=1, gpu=True)
+        self.create_task_event(id=7, mem=2, cpus=1, gpu=True)
+
+        while True:
+            # print(self.get_running_jobs())  # Execute your periodic task
+            time.sleep(3)   # Wait for 3 seconds before the next execution
+
+            if mng.running_containers:
+                mng.kill_idle_containers()
+
+            print("Service is checking for tasks...")
+            if self.task_event_stack:
+                task_event = self.task_event_stack[-1]
+                mng.spawn_container(hostname=hostname,
+                                    mem=task_event.required_mem,
+                                    cpus=task_event.required_cpus,
+                                    gpu=task_event.required_gpu)
+                print("Job triggered!")
+                self.task_event_history[str(task_event.id)] = {"event": task_event}
+                self.task_event_stack.pop()
 
 if __name__ == "__main__":
     wrangler = MetaWrangler()
-
-    mng = ContainerManager(wrangler)
-    mng.on_job_trigger()
-    mng.run()
+    wrangler.run()
 
 # task_db = wrangler.get_all_tasks()
 # date_keys = ['Date', 'DateStart', 'DateStart', 'DateComp', 'Start', 'StartRen', 'Comp']
