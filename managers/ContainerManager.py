@@ -183,7 +183,7 @@ class ContainerManager:
                 containers_to_shutdown.append(container)
 
         for container in containers_to_shutdown:
-            container.kill_container()
+            self.kill_container(container)
             try:
                 self.running_containers.remove(container)
             except ValueError as e:
