@@ -277,7 +277,7 @@ class MetaWrangler():
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
-            time.sleep(3)   # Wait for 3 seconds before the next execution
+            time.sleep(10)   # Wait for 3 seconds before the next execution
 
             if mng.running_containers:
                 mng.kill_idle_containers()
@@ -296,12 +296,6 @@ class MetaWrangler():
                     self.task_event_stack.pop(0)
                 else:
                     self.task_event_stack.append(self.task_event_stack.pop(0)) ### put task to the end of the stack in case one gets stuck
-            else:
-                print("### DEBUG [Spawned Containers]", mng.containers_spawned)
-                print("### DEBUG [Cores status]: Occupied:", mng.occupied_cpus.count(True), "Free:",
-                      mng.occupied_cpus.count(False))
-                print("### DEBUG [GPUs Status]: Occupied:", mng.occupied_gpus.count(True), "Free:",
-                      mng.occupied_gpus.count(False))
 
 
 if __name__ == "__main__":
