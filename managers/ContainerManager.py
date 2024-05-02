@@ -39,8 +39,8 @@ class ContainerManager:
             try:
                 print(f"Starting container: {container_name}")
                 result = subprocess.run(
-                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
-                    capture_output=True, text=True, check=True
+                    args=self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
+                    capture_output=True
                 )
                 print("STDOUT:", result.stdout)
                 print("STDERR:", result.stderr)
@@ -96,7 +96,7 @@ class ContainerManager:
             command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
 
         command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"])
-        command = " ".join(command)
+        #command = " ".join(command)
         return command
 
     def get_system_usage(self):
@@ -142,3 +142,54 @@ class ContainerManager:
                 self.kill_idle_containers()
 
             time.sleep(5)  # Wait a bit before checking again
+
+if __name__=="__main__":
+    def get_container_command(hostname, name, memory, cpuset, gpu):
+        gpu_index = 0
+
+        command = [
+            "podman", "run",
+            "--name", name,
+            "--hostname", hostname,
+            "--userns", "keep-id",
+            "--umask", "0002",
+            "--net", "host",
+            "--log-level", "debug",
+            "-e", f"CONTAINER_NAME={name}",
+            "-e", "foundry_LICENSE=4101@100.68.207.27",
+            "-e", "PATH=$PATH:/opt/Thinkbox/Deadline10/bin/",
+            "-e", "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH",
+            "-e", "NUKE_PATH=$NUKE_PATH:/mnt/x/PROJECTS/software/nuke",
+            "-e", "HOME=/root",
+            "-e", "pixelmania_LICENSE=5053@pixelmanialic",
+            "-v", "/etc/group:/etc/group",
+            "-v", "/etc/passwd:/etc/passwd",
+            "-v", "/mnt/x:/mnt/x",
+            "-v", "/mnt/data:/mnt/data",
+            "-v", "/opt/Nuke/Nuke13.2v4:/opt/Nuke/Nuke13.2v4",
+            "-v", "/opt/Nuke/Nuke14.0v2:/opt/Nuke/Nuke14.0v2",
+            "-v", "/opt/hfs20.0.590:/opt/hfs20.0.590",
+            "-v", "/etc/init.d:/etc/init.d",
+            "-v", "/usr/lib:/usr/lib",
+            "-v", "/usr/lib/sesi:/usr/lib/sesi",
+            "-v", "/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu",
+            "-v", "/usr/local:/usr/local",
+            "-v", "/usr/share/fonts:/usr/share/fonts",
+            "-v", "/home/sadmin:/home/sadmin",
+            "-v", "/root:/root",
+            "-v", "/sys:/sys",
+            "--memory", memory,
+            "--memory-swap", memory,
+            "--cpuset-cpus", f"{cpuset[0]}-{cpuset[1]}",
+            "--rm",
+            "--replace"
+        ]
+
+        if gpu:
+            command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
+
+        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"])
+        #command = " ".join(command)
+        return command
+
+    print(get_container_command("renderservermeta", "2g_1_0", "2g", (120, 121), False))
