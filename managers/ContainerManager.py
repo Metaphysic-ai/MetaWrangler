@@ -39,7 +39,7 @@ class ContainerManager:
             try:
                 print(f"Starting container: {container_name}")
                 result = subprocess.run(
-                    args=self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
+                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
                     capture_output=True, text=True, check=True, shell=True
                 )
                 print("STDOUT:", result.stdout)
@@ -96,6 +96,7 @@ class ContainerManager:
             command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
 
         command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"])
+        command = " ".join(command)
         return command
 
     def get_system_usage(self):
