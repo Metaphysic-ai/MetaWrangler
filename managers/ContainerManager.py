@@ -16,9 +16,7 @@ class Container:
     def kill(self):
         try:
             print(f"Killing container: {self.name}")
-            result = subprocess.run(f"podman stop --time 30 {self.id}", capture_output=True, text=True, check=True, shell=True)
-            print("STDOUT:", result.stdout)
-            print("STDERR:", result.stderr)
+            subprocess.run(f"docker stop {self.name} || true")
 
             print(f"Container {self.name} killed successfully.")
         except subprocess.CalledProcessError as e:
@@ -42,12 +40,12 @@ class ContainerManager:
                     args=self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
                     capture_output=True
                 )
-                print("STDOUT:", result.stdout)
-                print("STDERR:", result.stderr)
+                # print("STDOUT:", result.stdout)
+                # print("STDERR:", result.stderr)
                 container_id = result.stdout.strip()
                 worker_name = f"{worker_name_root}-{container_name}"
                 self.running_containers.append(Container(worker_name, container_id))
-                print(f"Container {worker_name} started successfully.")
+                print(f"Container {worker_name} with id {container_id} started successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while running the container: {e}")
 
