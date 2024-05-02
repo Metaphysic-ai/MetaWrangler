@@ -111,6 +111,8 @@ class MetaWrangler():
 
     def is_worker_idle(self, worker, delta_min=5):
         worker_db = wrangler.get_worker_db(worker)
+        if not worker_db["info"]:
+            return False
 
         print(worker, worker_db)
         last_render_time_str = worker_db["info"]["LastRenderTime"]
