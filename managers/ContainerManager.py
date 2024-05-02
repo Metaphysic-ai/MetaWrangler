@@ -37,15 +37,14 @@ class ContainerManager:
         if system_cpu_usage < 80.0 and system_mem_usage < 80.0:
             try:
                 print(f"Starting container: {container_name}")
-                result = subprocess.run(
-                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
-                    capture_output=True, shell=True
+                subprocess.run(
+                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False), shell=True
                 )
                 # print("STDOUT:", result.stdout)
                 # print("STDERR:", result.stderr)
-                container_id = result.stdout.strip()
+
                 worker_name = f"{worker_name_root}-{container_name}"
-                self.running_containers.append(Container(worker_name, container_name, container_id))
+                self.running_containers.append(Container(worker_name, container_name, 0))
                 print(f"Container {worker_name} started successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while running the container: {e}")
