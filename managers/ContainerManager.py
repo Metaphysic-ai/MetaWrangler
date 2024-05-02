@@ -122,10 +122,10 @@ class ContainerManager:
 
     def get_container_command(self, hostname, name, memory, cpuset, gpu, gpu_index):
 
-        # if len(cpuset) == 1:
-        #     cpuset = str(cpuset)[1:-2]
-        # else:
-        #     cpuset = str(cpuset)[1:-1]
+        if len(cpuset) == 1:
+            cpuset = str(cpuset)[1:-2].replace(" ", "")
+        else:
+            cpuset = str(cpuset)[1:-1].replace(" ", "")
 
         command = [
             "podman", "run",
