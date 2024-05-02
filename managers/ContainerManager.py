@@ -129,15 +129,15 @@ class ContainerManager:
 
     def run(self):
         while True:
+            if self.running_containers:
+                self.kill_idle_containers()
+
             print("Service is checking for jobs...")
             if self.job_trigger_event:
                 self.job_trigger_event = False
                 print("Job triggered!")
                 # Run the container - replace 'python:3.8-slim' with your specific container
                 self.spawn_container("2g_1_0")
-
-            if self.running_containers:
-                self.kill_idle_containers()
 
             time.sleep(5)  # Wait a bit before checking again
 
