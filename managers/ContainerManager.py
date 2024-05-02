@@ -94,8 +94,8 @@ class ContainerManager:
         if gpu:
             command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
 
-        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/managers/startup.sh &"])
-        #command = " ".join(command)
+        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/managers/startup.sh"])
+        command = " ".join(command)
         return command
 
     def get_system_usage(self):
@@ -187,7 +187,7 @@ if __name__=="__main__":
         if gpu:
             command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
 
-        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"])
+        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/managers/startup.sh"])
         command = " ".join(command)
         return command
 
