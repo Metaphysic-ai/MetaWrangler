@@ -38,7 +38,7 @@ class ContainerManager:
             try:
                 print(f"Starting container: {container_name}")
                 result = subprocess.run(
-                    args=self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
+                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
                     capture_output=True
                 )
                 # print("STDOUT:", result.stdout)
