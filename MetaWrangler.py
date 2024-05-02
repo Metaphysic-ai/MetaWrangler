@@ -2,8 +2,9 @@
 
 from Deadline.DeadlineConnect import DeadlineCon as Connect
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import pandas as pd
+from managers.ContainerManager import ContainerManager
 
 class MetaWrangler():
     def __init__(self):
@@ -88,7 +89,27 @@ class MetaWrangler():
             # If no format matches, raise an exception or return None
             raise ValueError(f"Date format for '{date_str}' is not supported")
 
-    def get_all(self):
+    def is_worker_idle(self, worker, delta_min=5):
+        worker_db = wrangler.get_worker_db(worker)
+
+        if worker_db["info"]["Stat"] == 4: ### Stat index for "Stalled" which I collate with idle for simplicity.
+            return True
+        else:
+            last_render_time_str = worker_db["info"]["LastRenderTime"]
+            # Parse the last render time
+            last_render_time = self.parse_datetime(last_render_time_str)
+
+            # Get the current time with timezone aware if required
+            current_time = datetime.now(timezone.utc)
+
+            # Check if the difference is greater than 5 minutes
+            difference = current_time - last_render_time
+            if difference > timedelta(minutes=delta_min):
+                return True
+            else:
+                return False
+
+    def get_all_tasks(self):
 
         # return self.con.Tasks.GetJobTasks()
         # return self.con.Jobs.GetJobs()
@@ -138,13 +159,6 @@ class MetaWrangler():
                     cores = int(match.group(4))
                 task["CoresAssigned"] = cores
             return task
-
-        worker_db = {}
-        for worker_name in self.con.Slaves.GetSlaveNames():
-            history = self.con.Slaves.GetSlaveHistoryEntries(worker_name)
-            reports = self.con.Slaves.GetSlaveReports(worker_name)
-            worker_db[worker_name] = {"history": history, "reports": reports}
-        # print(worker_db["renderserver-4g_0"]["reports"])
 
         task_db = []
         job_call = self.con.Jobs.GetJobs()
@@ -200,7 +214,13 @@ class MetaWrangler():
                             print(combined_dict)
                 task_db.append(combined_dict)
             # print(combined_dict)
-        return worker_db, task_db
+        return task_db
+
+    def get_worker_db(self, worker_name):
+        info = self.con.Slaves.GetSlaveInfo(worker_name)
+        history = self.con.Slaves.GetSlaveHistoryEntries(worker_name)
+        reports = self.con.Slaves.GetSlaveReports(worker_name)
+        return {"info": info, "history": history, "reports": reports}
 
     def get_task(self, jid, tid):
         return self.con.Tasks.GetJobTask(jid, tid)
@@ -213,24 +233,31 @@ class MetaWrangler():
         except KeyboardInterrupt:
             print("Stopped by user.")
 
-wrangler = MetaWrangler()
-worker_db, task_db = wrangler.get_all()
-date_keys = ['Date', 'DateStart', 'DateStart', 'DateComp', 'Start', 'StartRen', 'Comp']
-percent_keys = ['SnglTskPrg', 'Prog']
-factorize_keys = ['User', 'Dept', 'Version', 'WriteNode', 'RenderMode', 'Mach', 'Plug', 'JobID']
-task_df = wrangler.convert_dict_to_df(task_db, date_keys, percent_keys, factorize_keys)
-print(task_db[0])
-print(len(task_db))
-del task_db
-print(task_df)
-#task_df.to_pickle('./dataframes/task_df.pkl')
-# print(worker_db['renderserver-32g_12']['reports'][0])
-# print(worker_db['renderserver-32g_12']['history'][0])
-# j_id = worker_db['renderserver-32g_12']['reports'][0]['Reps'][0]['Job']
-# t_id = worker_db['renderserver-32g_12']['reports'][0]['Reps'][0]['Task']
+if __name__ == "__main__":
+    wrangler = MetaWrangler()
 
-#print(wrangler.get_task("66268da69c2f089a37f5b800", "1"))
+    mng = ContainerManager(wrangler)
+    mng.on_job_trigger()
+    mng.run()
 
-# Stat 5 -> Complete
-# Stat 6 -> Fail
-# Stat 3 -> Suspended
+# task_db = wrangler.get_all_tasks()
+# date_keys = ['Date', 'DateStart', 'DateStart', 'DateComp', 'Start', 'StartRen', 'Comp']
+# percent_keys = ['SnglTskPrg', 'Prog']
+# factorize_keys = ['User', 'Dept', 'Version', 'WriteNode', 'RenderMode', 'Mach', 'Plug', 'JobID']
+# task_df = wrangler.convert_dict_to_df(task_db, date_keys, percent_keys, factorize_keys)
+# del task_db
+
+# worker = "renderserver-4g_0"
+# worker = "renderservermeta-2g_1_0"
+#
+# worker_db = wrangler.get_worker_db(worker)
+# print(worker_db["info"])
+# print(wrangler.is_worker_idle(worker, delta_min=10000))
+
+# WorkerStat 2 -> Idle
+
+# WorkerStat 4 -> Stalled
+
+# TaskStat 5 -> Complete
+# TaskStat 6 -> Fail
+# TaskStat 3 -> Suspended
