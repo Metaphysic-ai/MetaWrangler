@@ -105,15 +105,18 @@ class MetaWrangler():
         print("### DEBUG:", worker_db)
 
         last_render_time_str = worker_db["info"]["LastRenderTime"]
-        # Parse the last render time
-        last_render_time = self.parse_datetime(last_render_time_str)
+        if last_render_time_str is None:
+            return False
+        else:
+            # Parse the last render time
+            last_render_time = self.parse_datetime(last_render_time_str)
 
-        # Get the current time with timezone aware if required
-        current_time = datetime.now(timezone.utc)
+            # Get the current time with timezone aware if required
+            current_time = datetime.now(timezone.utc)
 
-        # Check if the difference is greater than 5 minutes
-        difference = current_time - last_render_time
-        return difference > timedelta(minutes=delta_min)
+            # Check if the difference is greater than 5 minutes
+            difference = current_time - last_render_time
+            return difference > timedelta(minutes=delta_min)
 
     def get_all_tasks(self):
 
