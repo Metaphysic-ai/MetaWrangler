@@ -37,8 +37,8 @@ class ContainerManager:
         if system_cpu_usage < 80.0 and system_mem_usage < 80.0:
             try:
                 print(f"Starting container: {container_name}")
-                subprocess.run(
-                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False), stdout=subprocess.DEVNULL, shell=True
+                subprocess.Popen(
+                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False), shell=True
                 )
                 # print("STDOUT:", result.stdout)
                 # print("STDERR:", result.stderr)
