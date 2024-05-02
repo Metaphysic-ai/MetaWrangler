@@ -7,12 +7,14 @@ import pandas as pd
 from managers.ContainerManager import ContainerManager
 
 class TaskEvent():
-    def __init__(self, id, mem, cpus, gpu, creation_time):
+    def __init__(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
         self.id = id
         self.required_mem = mem
         self.required_cpus = cpus
         self.required_gpu = gpu
         self.creation_time = creation_time
+        self.batch_size = batch_size
+        self.timeout = timeout
 
 class MetaWrangler():
     def __init__(self):
@@ -251,8 +253,8 @@ class MetaWrangler():
     def get_task(self, jid, tid):
         return self.con.Tasks.GetJobTask(jid, tid)
 
-    def create_task_event(self, id, mem, cpus, gpu, creation_time):
-        task_event = TaskEvent(id, mem, cpus, gpu, creation_time)
+    def create_task_event(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
+        task_event = TaskEvent(id, mem, cpus, gpu, creation_time, batch_size, timeout)
         self.task_event_stack.append(task_event)
 
     def run(self):
@@ -266,18 +268,22 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
-        self.create_task_event(id=0, mem=2, cpus=1, gpu=False, creation_time=datetime.now())
-        self.create_task_event(id=1, mem=8, cpus=4, gpu=False, creation_time=datetime.now())
-        self.create_task_event(id=2, mem=32, cpus=8, gpu=False, creation_time=datetime.now())
-        self.create_task_event(id=3, mem=8, cpus=4, gpu=True, creation_time=datetime.now())
-        self.create_task_event(id=4, mem=32, cpus=8, gpu=True, creation_time=datetime.now())
-        self.create_task_event(id=5, mem=32, cpus=120, gpu=True, creation_time=datetime.now())
-        self.create_task_event(id=6, mem=2, cpus=1, gpu=True, creation_time=datetime.now())
-        self.create_task_event(id=7, mem=2, cpus=1, gpu=True, creation_time=datetime.now())
+        self.create_task_event(id=0, mem=2, cpus=1, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
+        self.create_task_event(id=1, mem=4, cpus=1, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=2, mem=8, cpus=1, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=3, mem=32, cpus=1, gpu=True, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=4, mem=2, cpus=2, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
+        self.create_task_event(id=5, mem=4, cpus=2, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=6, mem=8, cpus=2, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=7, mem=32, cpus=2, gpu=True, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=8, mem=2, cpus=4, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
+        self.create_task_event(id=9, mem=4, cpus=4, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=10, mem=8, cpus=4, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=11, mem=32, cpus=4, gpu=True, batch_size=10, timeout=10,  creation_time=datetime.now())
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
-            time.sleep(10)   # Wait for 3 seconds before the next execution
+            time.sleep(3)   # Wait for 3 seconds before the next execution
 
             if mng.running_containers:
                 mng.kill_idle_containers()
