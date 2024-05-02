@@ -23,7 +23,7 @@ class ContainerManager:
         self.job_trigger_event = False
         self.MANAGER_ROOT = os.getcwd()
         self.occupied_cpus = [True if cpu_index<8 else False for cpu_index in range(os.cpu_count())] # Occupy the first 8 cores for system stuff.
-        self.occupied_gpus = [False for gpu_index in GPUtil.getAvailable()]
+        self.occupied_gpus = [False for gpu_index in GPUtil.getAvailable(limit=4)]
         print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(), "->", self.occupied_gpus)
 
     def spawn_container(self, hostname, mem=2, cpus=1, gpu=False):
