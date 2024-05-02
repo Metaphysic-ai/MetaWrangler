@@ -24,7 +24,7 @@ class ContainerManager:
         self.MANAGER_ROOT = os.getcwd()
         self.occupied_cpus = [True if cpu_index<8 else False for cpu_index in range(os.cpu_count())] # Occupy the first 8 cores for system stuff.
         self.occupied_gpus = [False for gpu_index in GPUtil.getAvailable()]
-        print(self.MANAGER_ROOT)
+        print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(), "->", self.occupied_gpus)
 
     def spawn_container(self, hostname, mem=2, cpus=1, gpu=False):
         gpu_suffix = "gpu_" if gpu else ""
@@ -78,6 +78,7 @@ class ContainerManager:
         for cpu_index in cpuset:
             self.occupied_cpus[cpu_index] = False
         print("### DEBUG [Freeing up cpus]: Occupied:", self.occupied_cpus.count(True), "Free:", self.occupied_cpus.count(False))
+
     def assign_cpus(self, cpus):
         if self.occupied_cpus.count(False) < cpus: ### Check if there are enough free cores available
             return None
