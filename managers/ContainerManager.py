@@ -16,7 +16,7 @@ class Container:
     def kill(self):
         try:
             print(f"Killing container: {self.name}")
-            subprocess.run(f"podman stop {self.name} || true")
+            subprocess.run(f"podman stop {self.name} || true", shell=True)
 
             print(f"Container {self.name} killed successfully.")
         except subprocess.CalledProcessError as e:

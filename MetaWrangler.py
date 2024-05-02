@@ -102,6 +102,7 @@ class MetaWrangler():
 
     def is_worker_idle(self, worker, delta_min=5):
         worker_db = wrangler.get_worker_db(worker)
+        print("### DEBUG:", worker_db)
 
         if worker_db["info"]["Stat"] == 4: ### Stat index for "Stalled" which I collate with idle for simplicity.
             return True
