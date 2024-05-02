@@ -51,7 +51,8 @@ class ContainerManager:
                 return False
 
         system_cpu_usage, system_mem_usage = self.get_system_usage()
-        if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
+        # if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
+        if True:
             try:
                 print(f"Starting container: {worker_name}")
                 subprocess.Popen(
