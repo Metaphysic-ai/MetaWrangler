@@ -250,7 +250,13 @@ class MetaWrangler():
 
     def run(self):
         import socket
+        import subprocess
         hostname = socket.gethostname()
+
+        name_pattern = "*-meta*"
+        command = "podman ps -a --format '{{.Names}} {{.ID}}' "+f"| grep '${name_pattern}' |"+" awk '{print $2}' | xargs -r podman stop"
+
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
         self.create_task_event(id=0, mem=2, cpus=1, gpu=False)
