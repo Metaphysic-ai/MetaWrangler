@@ -114,7 +114,6 @@ class MetaWrangler():
         if not worker_db["info"]:
             return False
 
-        print(worker, worker_db)
         last_render_time_str = worker_db["info"]["LastRenderTime"]
         if last_render_time_str is None:
             return False
