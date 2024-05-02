@@ -94,7 +94,7 @@ class ContainerManager:
         if gpu:
             command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
 
-        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"])
+        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh &"])
         #command = " ".join(command)
         return command
 
