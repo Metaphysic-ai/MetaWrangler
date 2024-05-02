@@ -93,9 +93,9 @@ class ContainerManager:
         ]
 
         if gpu:
-            command += ["--device", f"nvidia.com/gpu={gpu_index}"]
+            command.extend(["--device", f"nvidia.com/gpu={gpu_index}"])
 
-        command += ["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"]
+        command.extend(["localhost/deadline_runner_ubuntu", "/home/sadmin/repos/MetaWrangler/startup.sh"])
         return command
 
     def get_system_usage(self):
