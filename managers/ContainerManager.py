@@ -51,8 +51,7 @@ class ContainerManager:
                 return False
 
         system_cpu_usage, system_mem_usage = self.get_system_usage()
-        # if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
-        if True:
+        if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
             try:
                 print(f"Starting container: {worker_name}")
                 subprocess.Popen(
@@ -123,10 +122,10 @@ class ContainerManager:
 
     def get_container_command(self, hostname, name, memory, cpuset, gpu, gpu_index):
 
-        if len(cpuset) == 1:
-            cpuset = str(cpuset)[1:-2]
-        else:
-            cpuset = str(cpuset)[1:-1]
+        # if len(cpuset) == 1:
+        #     cpuset = str(cpuset)[1:-2]
+        # else:
+        #     cpuset = str(cpuset)[1:-1]
 
         command = [
             "podman", "run",
