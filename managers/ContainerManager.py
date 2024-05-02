@@ -5,8 +5,9 @@ import os
 import asyncio
 
 class Container:
-    def __init__(self, name, id, mem="2g", cpuset=(8), gpu=False):
+    def __init__(self, name, suffix, id, mem="2g", cpuset=(8), gpu=False):
         self.name = name
+        self.suffix = suffix
         self.id = id
         self.mem = mem
         self.cpuset = cpuset
@@ -16,7 +17,7 @@ class Container:
     def kill(self):
         try:
             print(f"Killing container: {self.name}")
-            subprocess.run(f"podman stop {self.name} || true", shell=True)
+            subprocess.run(f"podman stop {self.suffix} || true", shell=True)
 
             print(f"Container {self.name} killed successfully.")
         except subprocess.CalledProcessError as e:
@@ -44,7 +45,7 @@ class ContainerManager:
                 # print("STDERR:", result.stderr)
                 container_id = result.stdout.strip()
                 worker_name = f"{worker_name_root}-{container_name}"
-                self.running_containers.append(Container(container_name, container_id))
+                self.running_containers.append(Container(worker_name, container_name, container_id))
                 print(f"Container {worker_name} started successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while running the container: {e}")
