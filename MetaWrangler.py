@@ -1,6 +1,6 @@
 # https://docs.thinkboxsoftware.com/products/deadline/10.3/2_Scripting%20Reference/index.html
 
-from Deadline.DeadlineConnect import DeadlineCon as Connect
+from deadline_api.Deadline.DeadlineConnect import DeadlineCon as Connect
 import time
 from datetime import datetime, timedelta, timezone
 import pandas as pd
@@ -8,7 +8,18 @@ from managers.ContainerManager import ContainerManager
 
 class MetaWrangler():
     def __init__(self):
-        self.con = Connect('10.175.19.98', 8081)
+        self.con = Connect(self.get_local_ip(), 8081)
+
+    def get_local_ip(self):
+        import socket
+        try:
+            # Create a dummy socket and connect to a well-known address (Google DNS)
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+        except Exception:
+            ip = "Could not determine local IP"
+        return ip
 
     def get_running_jobs(self):
         jobs = self.con.Jobs.GetJobs()

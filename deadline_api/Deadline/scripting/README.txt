@@ -1,0 +1,1 @@
+To install the deadline api stubs, run pip install {PATH TO DEADLINE-STUBS-TARBALL}, where {PATH TO DEADLINE-STUBS-TARBALL} is the file path of the deadline-stubs-*.tar.gz file in the api/scripting folder.
