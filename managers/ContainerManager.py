@@ -24,13 +24,14 @@ class ContainerManager:
         self.MANAGER_ROOT = os.getcwd()
         self.occupied_cpus = [True if cpu_index<8 else False for cpu_index in range(os.cpu_count())] # Occupy the first 8 cores for system stuff.
         self.occupied_gpus = [False for gpu_index in GPUtil.getAvailable(limit=4)]
+        self.spawn_index = 0
         print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(limit=4), "->", self.occupied_gpus)
 
     def spawn_container(self, hostname, mem=2, cpus=1, gpu=False):
         gpu_suffix = "gpu_" if gpu else ""
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
-        index = f"_{len(self.running_containers)}"
+        index = f"_{self.spawn_index}"
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
         worker_name = hostname + "-" + container_name
         gpu_index = None
@@ -58,6 +59,7 @@ class ContainerManager:
 
                 worker_name = f"{hostname}-{container_name}"
                 self.running_containers.append(Container(worker_name, container_name, 0, gpu_index=gpu_index))
+                self.spawn_index += 1
                 print(f"Container {worker_name} started successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while running the container: {e}")
@@ -181,7 +183,7 @@ class ContainerManager:
                 containers_to_shutdown.append(container)
 
         for container in containers_to_shutdown:
-            container.kill()
+            container.kill_container()
             try:
                 self.running_containers.remove(container)
             except ValueError as e:
