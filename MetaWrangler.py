@@ -102,24 +102,17 @@ class MetaWrangler():
 
     def is_worker_idle(self, worker, delta_min=5):
         worker_db = wrangler.get_worker_db(worker)
-        print("### DEBUG:", worker_db)
 
-        if worker_db["info"]["Stat"] == 4: ### Stat index for "Stalled" which I collate with idle for simplicity.
-            return True
-        else:
-            last_render_time_str = worker_db["info"]["LastRenderTime"]
-            # Parse the last render time
-            last_render_time = self.parse_datetime(last_render_time_str)
+        last_render_time_str = worker_db["info"]["LastRenderTime"]
+        # Parse the last render time
+        last_render_time = self.parse_datetime(last_render_time_str)
 
-            # Get the current time with timezone aware if required
-            current_time = datetime.now(timezone.utc)
+        # Get the current time with timezone aware if required
+        current_time = datetime.now(timezone.utc)
 
-            # Check if the difference is greater than 5 minutes
-            difference = current_time - last_render_time
-            if difference > timedelta(minutes=delta_min):
-                return True
-            else:
-                return False
+        # Check if the difference is greater than 5 minutes
+        difference = current_time - last_render_time
+        return difference > timedelta(minutes=delta_min)
 
     def get_all_tasks(self):
 

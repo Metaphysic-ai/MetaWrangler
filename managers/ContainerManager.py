@@ -44,8 +44,8 @@ class ContainerManager:
                 # print("STDERR:", result.stderr)
                 container_id = result.stdout.strip()
                 worker_name = f"{worker_name_root}-{container_name}"
-                self.running_containers.append(Container(worker_name, container_id))
-                print(f"Container {worker_name} with id {container_id} started successfully.")
+                self.running_containers.append(Container(container_name, container_id))
+                print(f"Container {worker_name} started successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while running the container: {e}")
 
