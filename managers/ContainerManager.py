@@ -24,7 +24,7 @@ class ContainerManager:
         self.MANAGER_ROOT = os.getcwd()
         self.occupied_cpus = [True if cpu_index<8 else False for cpu_index in range(os.cpu_count())] # Occupy the first 8 cores for system stuff.
         self.occupied_gpus = [False for gpu_index in GPUtil.getAvailable(limit=4)]
-        print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(), "->", self.occupied_gpus)
+        print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(limit=4), "->", self.occupied_gpus)
 
     def spawn_container(self, hostname, mem=2, cpus=1, gpu=False):
         gpu_suffix = "gpu_" if gpu else ""
@@ -112,6 +112,11 @@ class ContainerManager:
 
     def get_container_command(self, hostname, name, memory, cpuset, gpu, gpu_index):
 
+        if len(cpuset) == 1:
+            cpuset = str(cpuset)[1:-2]
+        else:
+            cpuset = str(cpuset)[1:-1]
+
         command = [
             "podman", "run",
             "--name", name,
@@ -145,7 +150,7 @@ class ContainerManager:
             "-v", "/sys:/sys",
             "--memory", memory,
             "--memory-swap", memory,
-            "--cpuset-cpus", str(cpuset)[1:-1],
+            "--cpuset-cpus", cpuset,
             "--rm",
             "--replace"
         ]
