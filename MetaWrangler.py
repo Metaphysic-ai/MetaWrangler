@@ -253,8 +253,7 @@ class MetaWrangler():
         import subprocess
         hostname = socket.gethostname()
 
-        name_pattern = "*-meta*"
-        command = "podman ps -a --format '{{.Names}} {{.ID}}' "+f"| grep '${name_pattern}' |"+" awk '{print $2}' | xargs -r podman stop"
+        command = "podman kill $(podman ps -q -f name=meta)"
 
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
