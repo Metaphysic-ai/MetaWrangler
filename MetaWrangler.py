@@ -7,11 +7,12 @@ import pandas as pd
 from managers.ContainerManager import ContainerManager
 
 class TaskEvent():
-    def __init__(self, id, mem, cpus, gpu):
+    def __init__(self, id, mem, cpus, gpu, creation_time):
         self.id = id
         self.required_mem = mem
         self.required_cpus = cpus
         self.required_gpu = gpu
+        self.creation_time = creation_time
 
 class MetaWrangler():
     def __init__(self):
@@ -109,7 +110,13 @@ class MetaWrangler():
             # If no format matches, raise an exception or return None
             raise ValueError(f"Date format for '{date_str}' is not supported")
 
-    def is_worker_idle(self, worker, delta_min=5):
+    def is_worker_idle(self, worker, creation_time, delta_min=5):
+        time_difference = datetime.now() - creation_time
+        minutes_difference = time_difference.total_seconds() / 60
+        x_minutes = 2
+        if minutes_difference > x_minutes:
+            return False
+
         worker_db = wrangler.get_worker_db(worker)
         if not worker_db["info"]:
             return False
@@ -244,13 +251,14 @@ class MetaWrangler():
     def get_task(self, jid, tid):
         return self.con.Tasks.GetJobTask(jid, tid)
 
-    def create_task_event(self, id, mem, cpus, gpu):
-        task_event = TaskEvent(id, mem, cpus, gpu)
+    def create_task_event(self, id, mem, cpus, gpu, creation_time):
+        task_event = TaskEvent(id, mem, cpus, gpu, creation_time)
         self.task_event_stack.append(task_event)
 
     def run(self):
         import socket
         import subprocess
+        from datetime import datetime
         hostname = socket.gethostname()
 
         command = "podman kill $(podman ps -q -f name=meta)"
@@ -258,14 +266,14 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
-        self.create_task_event(id=0, mem=2, cpus=1, gpu=False)
-        self.create_task_event(id=1, mem=8, cpus=4, gpu=False)
-        self.create_task_event(id=2, mem=32, cpus=8, gpu=False)
-        self.create_task_event(id=3, mem=8, cpus=4, gpu=True)
-        self.create_task_event(id=4, mem=32, cpus=8, gpu=True)
-        self.create_task_event(id=5, mem=32, cpus=120, gpu=True)
-        self.create_task_event(id=6, mem=2, cpus=1, gpu=True)
-        self.create_task_event(id=7, mem=2, cpus=1, gpu=True)
+        self.create_task_event(id=0, mem=2, cpus=1, gpu=False, creation_time=datetime.now())
+        self.create_task_event(id=1, mem=8, cpus=4, gpu=False, creation_time=datetime.now())
+        self.create_task_event(id=2, mem=32, cpus=8, gpu=False, creation_time=datetime.now())
+        self.create_task_event(id=3, mem=8, cpus=4, gpu=True, creation_time=datetime.now())
+        self.create_task_event(id=4, mem=32, cpus=8, gpu=True, creation_time=datetime.now())
+        self.create_task_event(id=5, mem=32, cpus=120, gpu=True, creation_time=datetime.now())
+        self.create_task_event(id=6, mem=2, cpus=1, gpu=True, creation_time=datetime.now())
+        self.create_task_event(id=7, mem=2, cpus=1, gpu=True, creation_time=datetime.now())
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
@@ -280,7 +288,8 @@ class MetaWrangler():
                 mng.spawn_container(hostname=hostname,
                                     mem=task_event.required_mem,
                                     cpus=task_event.required_cpus,
-                                    gpu=task_event.required_gpu)
+                                    gpu=task_event.required_gpu,
+                                    creation_time=task_event.creation_time)
                 print("Job triggered!")
                 self.task_event_history[str(task_event.id)] = {"event": task_event}
                 self.task_event_stack.pop()

@@ -6,7 +6,7 @@ import asyncio
 import GPUtil
 
 class Container:
-    def __init__(self, name, suffix, id, mem="2g", cpuset=(8, 9), gpu=False, gpu_index=None):
+    def __init__(self, name, suffix, id, mem="2g", cpuset=(8, 9), gpu=False, gpu_index=None, creation_time=None):
         self.name = name
         self.suffix = suffix
         self.id = id
@@ -15,6 +15,7 @@ class Container:
         self.gpu = gpu if gpu_index is None else True
         self.gpu_index = gpu_index
         self.markedForShutdown = False
+        self.creation_time = creation_time
 
 class ContainerManager:
     def __init__(self, wrangler):
@@ -27,7 +28,7 @@ class ContainerManager:
         self.spawn_index = 0
         print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(limit=4), "->", self.occupied_gpus)
 
-    def spawn_container(self, hostname, mem=2, cpus=1, gpu=False):
+    def spawn_container(self, hostname, mem=2, cpus=1, gpu=False, creation_time=None):
         gpu_suffix = "gpu_" if gpu else ""
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
@@ -58,7 +59,7 @@ class ContainerManager:
                 # print("STDERR:", result.stderr)
 
                 worker_name = f"{hostname}-{container_name}"
-                self.running_containers.append(Container(worker_name, container_name, 0, gpu_index=gpu_index))
+                self.running_containers.append(Container(worker_name, container_name, 0, creation_time=creation_time, gpu_index=gpu_index))
                 self.spawn_index += 1
                 print(f"Container {worker_name} started successfully.")
             except subprocess.CalledProcessError as e:
@@ -178,7 +179,7 @@ class ContainerManager:
     def kill_idle_containers(self):
         containers_to_shutdown = []
         for container in self.running_containers:
-            if self.wrangler.is_worker_idle(container.name, delta_min=1):
+            if self.wrangler.is_worker_idle(container.name, creation_time=container.creation_time, delta_min=1):
                 container.markedForShutdown = True
                 containers_to_shutdown.append(container)
 
