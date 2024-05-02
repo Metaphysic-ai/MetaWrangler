@@ -36,20 +36,19 @@ class ContainerManager:
         index = f"_{self.spawn_index}"
         self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
-        self.containers_spawned.append(container_name)
         worker_name = hostname + "-" + container_name
         gpu_index = None
 
         cpuset = self.assign_cpus(cpus)
         if cpuset is None:
             print(f"Not enough cores left on the system for worker {worker_name}. Skipping.")
-            return
+            return False
 
         if gpu:
             gpu_index = self.assign_gpu()
             if gpu_index is None:
                 print(f"Not enough gpus left on the system for worker {worker_name}. Skipping. ")
-                return
+                return False
 
         system_cpu_usage, system_mem_usage = self.get_system_usage()
         if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
@@ -63,9 +62,15 @@ class ContainerManager:
 
                 worker_name = f"{hostname}-{container_name}"
                 self.running_containers.append(Container(worker_name, container_name, 0, creation_time=creation_time, gpu_index=gpu_index))
+                self.containers_spawned.append(container_name)
                 print(f"Container {worker_name} started successfully.")
-            except subprocess.CalledProcessError as e:
+                return True
+            except subprocess.SubprocessError as e:
                 print(f"An error occurred while running the container: {e}")
+                return False
+        else:
+            print("The server is currently at high load. Skipping worker creation")
+            return False
 
     def kill_container(self, container):
         try:

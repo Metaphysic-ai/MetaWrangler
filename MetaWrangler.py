@@ -285,14 +285,17 @@ class MetaWrangler():
             print("Service is checking for tasks...")
             if self.task_event_stack:
                 task_event = self.task_event_stack[0]
-                mng.spawn_container(hostname=hostname,
-                                    mem=task_event.required_mem,
-                                    cpus=task_event.required_cpus,
-                                    gpu=task_event.required_gpu,
-                                    creation_time=task_event.creation_time)
-                print("Job triggered!")
-                self.task_event_history[str(task_event.id)] = {"event": task_event}
-                self.task_event_stack.pop(0)
+                result = mng.spawn_container(hostname=hostname,
+                                            mem=task_event.required_mem,
+                                            cpus=task_event.required_cpus,
+                                            gpu=task_event.required_gpu,
+                                            creation_time=task_event.creation_time)
+                if result:
+                    print("Job triggered!")
+                    self.task_event_history[str(task_event.id)] = {"event": task_event}
+                    self.task_event_stack.pop(0)
+                else:
+                    self.task_event_stack.append(self.task_event_stack.pop(0)) ### put task to the end of the stack in case one gets stuck
             else:
                 print("### DEBUG [Spawned Containers]", mng.containers_spawned)
                 print("### DEBUG [Cores status]: Occupied:", mng.occupied_cpus.count(True), "Free:",
