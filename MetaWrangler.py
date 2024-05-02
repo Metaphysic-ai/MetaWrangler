@@ -293,6 +293,13 @@ class MetaWrangler():
                 print("Job triggered!")
                 self.task_event_history[str(task_event.id)] = {"event": task_event}
                 self.task_event_stack.pop(0)
+            else:
+                print("### DEBUG [Spawned Containers]", mng.containers_spawned)
+                print("### DEBUG [Cores status]: Occupied:", mng.occupied_cpus.count(True), "Free:",
+                      mng.occupied_cpus.count(False))
+                print("### DEBUG [GPUs Status]: Occupied:", mng.occupied_gpu.count(True), "Free:",
+                      mng.occupied_gpu.count(False))
+
 
 if __name__ == "__main__":
     wrangler = MetaWrangler()

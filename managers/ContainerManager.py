@@ -26,6 +26,7 @@ class ContainerManager:
         self.occupied_cpus = [True if cpu_index<8 else False for cpu_index in range(os.cpu_count())] # Occupy the first 8 cores for system stuff.
         self.occupied_gpus = [False for gpu_index in GPUtil.getAvailable(limit=4)]
         self.spawn_index = 0
+        self.containers_spawned = []
         print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(limit=4), "->", self.occupied_gpus)
 
     def spawn_container(self, hostname, mem=2, cpus=1, gpu=False, creation_time=None):
@@ -35,6 +36,7 @@ class ContainerManager:
         index = f"_{self.spawn_index}"
         self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
+        self.containers_spawned.append(container_name)
         worker_name = hostname + "-" + container_name
         gpu_index = None
 
