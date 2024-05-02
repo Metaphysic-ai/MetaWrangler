@@ -160,7 +160,7 @@ class ContainerManager:
             "-v", "/sys:/sys",
             "--memory", memory,
             "--memory-swap", memory,
-            "--cpuset-cpus", cpuset,
+            "--cpuset-cpus", str(cpuset),
             "--rm",
             "--replace"
         ]
