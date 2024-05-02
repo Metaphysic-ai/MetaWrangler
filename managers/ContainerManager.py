@@ -38,7 +38,7 @@ class ContainerManager:
             try:
                 print(f"Starting container: {container_name}")
                 subprocess.Popen(
-                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False), shell=True
+                    self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False), stdout=subprocess.DEVNULL, shell=True
                 )
                 # print("STDOUT:", result.stdout)
                 # print("STDERR:", result.stderr)
