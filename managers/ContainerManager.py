@@ -40,7 +40,7 @@ class ContainerManager:
                 print(f"Starting container: {container_name}")
                 result = subprocess.run(
                     self.get_container_command(worker_name_root, container_name, "2g", (120, 121), False),
-                    capture_output=True, text=True, check=True, shell=True
+                    capture_output=True, text=True, check=True
                 )
                 print("STDOUT:", result.stdout)
                 print("STDERR:", result.stderr)
