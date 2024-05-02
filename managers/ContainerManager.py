@@ -33,6 +33,7 @@ class ContainerManager:
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
         index = f"_{self.spawn_index}"
+        self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
         worker_name = hostname + "-" + container_name
         gpu_index = None
@@ -60,7 +61,6 @@ class ContainerManager:
 
                 worker_name = f"{hostname}-{container_name}"
                 self.running_containers.append(Container(worker_name, container_name, 0, creation_time=creation_time, gpu_index=gpu_index))
-                self.spawn_index += 1
                 print(f"Container {worker_name} started successfully.")
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while running the container: {e}")

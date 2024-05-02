@@ -284,7 +284,7 @@ class MetaWrangler():
 
             print("Service is checking for tasks...")
             if self.task_event_stack:
-                task_event = self.task_event_stack[-1]
+                task_event = self.task_event_stack[0]
                 mng.spawn_container(hostname=hostname,
                                     mem=task_event.required_mem,
                                     cpus=task_event.required_cpus,
@@ -292,7 +292,7 @@ class MetaWrangler():
                                     creation_time=task_event.creation_time)
                 print("Job triggered!")
                 self.task_event_history[str(task_event.id)] = {"event": task_event}
-                self.task_event_stack.pop()
+                self.task_event_stack.pop(0)
 
 if __name__ == "__main__":
     wrangler = MetaWrangler()
