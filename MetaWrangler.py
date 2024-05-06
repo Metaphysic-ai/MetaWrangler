@@ -44,7 +44,7 @@ class MetaWrangler():
                 items.extend(self.flatten_dict(v, k, sep=sep).items())
             elif isinstance(v, list):
                 # if len(v) > 1:
-                #     print(f"List at key '{k}' has multiple elements; only the first element is used.")
+                #     print(f"List at key '{k}' has mself.con = Connect(self.get_local_ip(), 8081)ultiple elements; only the first element is used.")
                 items.append((k, v[0] if v else None))
             else:
                 items.append((k, v))
@@ -268,18 +268,7 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
-        self.create_task_event(id=0, mem=2, cpus=1, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
-        self.create_task_event(id=1, mem=4, cpus=1, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=2, mem=8, cpus=1, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=3, mem=32, cpus=1, gpu=True, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=4, mem=2, cpus=2, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
-        self.create_task_event(id=5, mem=4, cpus=2, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=6, mem=8, cpus=2, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=7, mem=32, cpus=2, gpu=True, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=8, mem=2, cpus=4, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
-        self.create_task_event(id=9, mem=4, cpus=4, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=10, mem=8, cpus=4, gpu=False, batch_size=10, timeout=10,  creation_time=datetime.now())
-        self.create_task_event(id=11, mem=32, cpus=4, gpu=True, batch_size=10, timeout=10,  creation_time=datetime.now())
+        self.create_task_event(id=0, mem=16, cpus=16, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now())
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
@@ -306,6 +295,7 @@ class MetaWrangler():
 
 if __name__ == "__main__":
     wrangler = MetaWrangler()
+    # worker_db = wrangler.get_worker_db("renderserver-meta_4_1_1")
     wrangler.run()
 
 # task_db = wrangler.get_all_tasks()
