@@ -361,7 +361,7 @@ if __name__ == "__main__":
         for n in range(5):
             gpu = True if n < 3 else False
             metajob = MetaJob({})
-            profile = TaskProfile(id=n, mem=16, cpus=16, gpu=gpu, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')), batch_size=10, timeout=10)
+            profile = TaskProfile(id=n, mem=32, cpus=16, gpu=gpu, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')), batch_size=10, timeout=10)
             metajob.profile = profile
             wrangler.task_event_stack.append(metajob)
         wrangler.run()
