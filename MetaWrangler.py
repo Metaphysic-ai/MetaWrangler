@@ -294,9 +294,34 @@ class MetaWrangler():
 
 
 if __name__ == "__main__":
+    import sys
+
     wrangler = MetaWrangler()
-    worker_db = wrangler.get_worker_db("renderserver-meta_16_16_0")
-    print(worker_db)
+
+    def run_mode():
+        wrangler.run()
+
+    def info_mode():
+        print("Entering Status(Analysis mode...")
+        worker_db = wrangler.get_worker_db("renderserver-meta_16_16_0")
+        print(worker_db)
+        print("### DEBUG: THIS ISN'T FULLY IMPLEMENTED YET ###")
+
+    if __name__ == "__main__":
+        if len(sys.argv) == 1:
+            run_mode()
+        elif len(sys.argv) == 2:
+            if sys.argv[1] == "--run":
+                run_mode()
+            elif sys.argv[1] == "--info":
+                info_mode()
+            else:
+                print("Invalid option. Usage: python MetaWrangler.py [--run | --info]")
+                sys.exit(1)
+        else:
+            print("Invalid option. Usage: python MetaWrangler.py [--run | --info]")
+            sys.exit(1)
+
     # wrangler.run()
 
 # task_db = wrangler.get_all_tasks()
