@@ -20,10 +20,12 @@ class JobManager:
                                         creation_time=creation_time)
 
     def submit_job_from_path(self, script_path, gpu=False, batch_size=10, timeout=10):
+        if not os.path.isdir("tmp"):
+            os.mkdir("tmp")
         job_name = script_path.split(os.sep)[-1]
         stripped_job_name = job_name.replace(".nk", "").replace(".", "_")
-        job_file_path = f"{os.getcwd()}/tmp/{stripped_job_name}_job.job"
-        plugin_file_path = f"{os.getcwd()}/tmp/{stripped_job_name}_plugin.job"
+        job_file_path = f"tmp/{stripped_job_name}_job.job"
+        plugin_file_path = f"tmp/{stripped_job_name}_plugin.job"
 
         job_info_str = f"""
         Plugin=Nuke
