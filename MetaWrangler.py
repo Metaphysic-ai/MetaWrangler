@@ -119,8 +119,8 @@ class MetaWrangler():
             # If no format matches, raise an exception or return None
             raise ValueError(f"Date format for '{date_str}' is not supported")
 
-    def is_worker_idle(self, worker, creation_time, delta_min=5):
-        time_difference = datetime.now() - datetime.strptime(creation_time, "%y%m%d_%H%M%S")
+    def is_worker_idle(self, worker, delta_min=5):
+        time_difference = datetime.now() - datetime.strptime(worker.creation_time, "%y%m%d_%H%M%S")
         minutes_difference = time_difference.total_seconds() / 60
         worker_db = wrangler.get_worker_db(worker.suffix)
         last_render_time_str = datetime.now()

@@ -198,7 +198,7 @@ class ContainerManager:
     def kill_idle_containers(self):
         containers_to_shutdown = []
         for container in self.running_containers:
-            if self.wrangler.is_worker_idle(container.name, creation_time=container.creation_time, delta_min=3):
+            if self.wrangler.is_worker_idle(container, delta_min=3):
                 container.markedForShutdown = True
                 containers_to_shutdown.append(container)
         self.wrangler.logger.debug("Identified idle workers due for shutdown:")
