@@ -81,6 +81,7 @@ class ContainerManager:
             print(f"Killing container: {container.name}")
             # the same profile and the same id is created, it would kill it on spawn.
             subprocess.Popen(f"podman stop --timeout 0 {container.suffix} || true", shell=True)
+            self.wrangler.con.Slaves.DeleteSlave(container.name)
             self.free_up_cpus(container.cpuset)
             if container.gpu_index is not None:
                 self.free_up_gpu(container.gpu_index)
