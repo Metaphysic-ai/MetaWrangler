@@ -129,8 +129,9 @@ class MetaWrangler():
         if minutes_difference > delta_min:
             return False
 
-        elif not worker_db["StatDate"]:
-            last_render_time_str = worker_db["StatDate"]
+        elif not worker_db["info"]:
+            if len(worker_db["info"]):
+                last_render_time_str = worker_db["StatDate"]
 
         elif last_render_time_str is None:
             return False
