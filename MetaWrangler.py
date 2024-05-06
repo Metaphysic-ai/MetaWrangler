@@ -329,6 +329,7 @@ if __name__ == "__main__":
 
     def info_mode():
         job_mng = JobManager(wrangler)
+        job_mng.submit_job_from_path("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-CA/wro_6300_metaSim.v001.nk")
 
 
     if __name__ == "__main__":
