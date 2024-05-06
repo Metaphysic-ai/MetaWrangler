@@ -28,7 +28,9 @@ class MetaWrangler():
         self.con = Connect(self.get_local_ip(), 8081)
         self.task_event_stack = []
         self.task_event_history = {}
-        #logging.FileHandler(filename='/mnt/x/temp/4renderserver/MetaWrangler3.logs', mode='a', encoding='utf-8', delay=False)
+        self.con_mng = ContainerManager(self)
+        self.job_mng = JobManager(self)
+
         logging.basicConfig(filename='/mnt/x/temp/4renderserver/MetaWrangler3.logs',
                             format='%(asctime)s %(message)s',
                             filemode='w')
@@ -46,9 +48,9 @@ class MetaWrangler():
             ip = "Could not determine local IP"
         return ip
 
-    def get_running_jobs(self, status="Queued"):
+    def get_running_jobs(self):
         jobs = self.con.Jobs.GetJobs()
-        return [job for job in jobs if job[f"{status}Chunks"] ]
+        return [job for job in jobs if job["QueuedChunks"] or job["RenderingChunks"] ]
 
     def flatten_dict(self, d, parent_key='', sep='_'):
         items = []
@@ -281,6 +283,16 @@ class MetaWrangler():
         batch_size=10, timeout=10, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')))
         return profile
 
+    def assign_containers_to_job(self, metajob):
+        containers_to_assign = []
+        for container in self.con_mng.running_containers:
+            if metajob.profile.required_mem == container.mem \
+                    and metajob.profile.required_cpus == container.cpus \
+                    and metajob.profile.required_gpu == container.gpu:
+                containers_to_assign.append(container.name)
+
+        self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["Props"]["_id"], containers_to_assign)
+
     def run(self):
         import socket
         import subprocess
@@ -291,33 +303,32 @@ class MetaWrangler():
 
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
-        mng = ContainerManager(self)
-        job_mng = JobManager(self)
-
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
             self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
-            jobs = self.get_running_jobs("Queued")
+            jobs = self.get_running_jobs()
             for job in jobs:
                 metajob = MetaJob(job)
                 metajob.profile = self.get_job_profile(metajob.job_dict["Props"]["PlugInfo"]["SceneFile"])
                 self.task_event_stack.append(metajob)
 
-            if mng.running_containers:
-                mng.kill_idle_containers()
+            if self.con_mng.running_containers:
+                self.con_mng.kill_idle_containers()
 
             time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
             print("Service is checking for tasks...")
             if self.task_event_stack:
                 metajob = self.task_event_stack[0]
                 task_event = metajob.profile
-                result = mng.spawn_container(hostname=hostname,
+                result = self.con_mng.spawn_container(hostname=hostname,
                                             mem=task_event.required_mem,
                                             id=task_event.id,
                                             cpus=task_event.required_cpus,
                                             gpu=task_event.required_gpu,
                                             creation_time=task_event.creation_time)
+
+                self.assign_containers_to_job(metajob)
                 self.logger.debug(f"RESULT OF SPAWNCONTAINER: {result}")
                 if result:
                     print("Job triggered!")
@@ -333,12 +344,10 @@ if __name__ == "__main__":
     wrangler = MetaWrangler()
 
     def run_mode():
-        job_mng = JobManager(wrangler)
         wrangler.run()
 
     def info_mode():
-        job_mng = JobManager(wrangler)
-        job_mng.submit_job_from_path("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-CA/wro_6300_metaSim.v001.nk")
+        wrangler.job_mng.submit_job_from_path("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-CA/wro_6300_metaSim.v001.nk")
 
 
     if __name__ == "__main__":
