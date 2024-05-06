@@ -112,7 +112,7 @@ class MetaWrangler():
         # Attempt to parse the datetime string using each format
         for fmt in formats:
             try:
-                return datetime.strptime(date_str, fmt)
+                return datetime.strptime(str(date_str), fmt)
             except ValueError:
                 continue
 
