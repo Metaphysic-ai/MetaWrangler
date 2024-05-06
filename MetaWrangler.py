@@ -289,7 +289,7 @@ class MetaWrangler():
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
-            self.logger.debug("Numbers of tasks in stack:", str(len(self.task_event_stack)))
+            self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
 
             if mng.running_containers:
                 mng.kill_idle_containers()
@@ -306,7 +306,7 @@ class MetaWrangler():
                                             cpus=task_event.required_cpus,
                                             gpu=task_event.required_gpu,
                                             creation_time=task_event.creation_time)
-                self.logger.debug("RESULT OF SPAWNCONTAINER:", str(result))
+                self.logger.debug(f"RESULT OF SPAWNCONTAINER: {result}")
                 if result:
                     print("Job triggered!")
                     self.task_event_history[str(task_event.id)] = {"event": task_event}
