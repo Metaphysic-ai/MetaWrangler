@@ -39,7 +39,7 @@ class ContainerManager:
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
         id = self.spawn_index if id is None else id
-        index = f"_{self.id}_{creation_time}"
+        index = f"_{id}_{creation_time}"
         self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
         worker_name = hostname + "-" + container_name
