@@ -298,6 +298,7 @@ class MetaWrangler():
                                             cpus=task_event.required_cpus,
                                             gpu=task_event.required_gpu,
                                             creation_time=task_event.creation_time)
+                print("##### DEBUGDEBUG: RESULT OF SPAWNCONTAINER:", result)
                 if result:
                     print("Job triggered!")
                     self.task_event_history[str(task_event.id)] = {"event": task_event}
