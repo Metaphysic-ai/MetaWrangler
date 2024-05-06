@@ -268,7 +268,8 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
-        self.create_task_event(id=0, mem=16, cpus=16, gpu=False, batch_size=10, timeout=10, creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
+        self.create_task_event(id=0, mem=16, cpus=16, gpu=False, batch_size=10, timeout=10,
+                               creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
         self.create_task_event(id=1, mem=2, cpus=1, gpu=False, batch_size=10, timeout=10,
                                creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
         self.create_task_event(id=2, mem=4, cpus=4, gpu=True, batch_size=10, timeout=10,
