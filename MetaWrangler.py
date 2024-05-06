@@ -123,13 +123,14 @@ class MetaWrangler():
         time_difference = datetime.now() - datetime.strptime(creation_time, "%y%m%d_%H%M%S")
         minutes_difference = time_difference.total_seconds() / 60
         worker_db = wrangler.get_worker_db(worker)
-        last_render_time_str = worker_db["info"]["StatDate"]
+        last_render_time_str = datetime.now()
 
+        self.logger.debug(f"######## MINUTES DIFFERENCE: {minutes_difference} with delta {delta_min}")
         if minutes_difference > delta_min:
             return False
 
         elif not worker_db["info"]:
-            return False
+            last_render_time_str = worker_db["info"]["StatDate"]
 
         elif last_render_time_str is None:
             return False
