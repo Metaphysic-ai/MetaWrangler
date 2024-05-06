@@ -34,6 +34,7 @@ class ContainerManager:
         print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(limit=4), "->", self.occupied_gpus)
 
     def spawn_container(self, hostname, mem=2, cpus=1, gpu=False, creation_time=None):
+        print("#######DEBUGDEBUGDEBUG", hostname, mem, cpus, gpu, creation_time)
         gpu_suffix = "gpu_" if gpu else ""
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
