@@ -126,7 +126,7 @@ class MetaWrangler():
         minutes_difference = seconds_difference / 60
 
         worker_db = wrangler.get_worker_db(worker.name)
-        last_render_time_str = datetime.now()
+        last_render_time_str = None
         self.logger.debug(str(worker.name))
         self.logger.debug(worker_db)
         self.logger.debug(f"######## MINUTES DIFFERENCE: {minutes_difference} with delta {delta_min}")
