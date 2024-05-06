@@ -291,7 +291,7 @@ class MetaWrangler():
                     and metajob.profile.required_gpu == container.gpu:
                 containers_to_assign.append(container.name)
 
-        self.logger.debug("Assigning containers: "+str(
+        self.logger.debug("X#X#X#X#DEBUG: Assigning containers: "+str(
             self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["_id"], containers_to_assign)))
 
     def run(self):
@@ -317,6 +317,10 @@ class MetaWrangler():
             if self.con_mng.running_containers:
                 self.con_mng.kill_idle_containers()
 
+            if self.task_event_history:
+                for k, v in self.task_event_history:
+                    self.assign_containers_to_job(self.task_event_history[k]["job"])
+
             time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
             print("Service is checking for tasks...")
             if self.task_event_stack:
@@ -329,7 +333,6 @@ class MetaWrangler():
                                             gpu=task_event.required_gpu,
                                             creation_time=task_event.creation_time)
 
-                self.assign_containers_to_job(metajob)
                 self.logger.debug(f"RESULT OF SPAWNCONTAINER: {result}")
                 if result:
                     print("Job triggered!")
