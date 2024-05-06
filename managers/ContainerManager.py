@@ -58,22 +58,21 @@ class ContainerManager:
 
         system_cpu_usage, system_mem_usage = self.get_system_usage()
         if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
-            try:
-                print(f"Starting container: {worker_name}")
-                subprocess.Popen(
-                    self.get_container_command(hostname, container_name, f"{mem}g", cpuset, gpu, gpu_index), stdout=subprocess.DEVNULL, shell=True
-                )
-                # print("STDOUT:", result.stdout)
-                # print("STDERR:", result.stderr)
+            print(f"Starting container: {worker_name}")
+            subprocess.Popen(
+                self.get_container_command(hostname, container_name, f"{mem}g", cpuset, gpu, gpu_index), stdout=subprocess.DEVNULL, shell=True
+            )
+            # print("STDOUT:", result.stdout)
+            # print("STDERR:", result.stderr)
 
-                worker_name = f"{hostname}-{container_name}"
-                self.running_containers.append(Container(worker_name, container_name, 0, creation_time=creation_time, gpu_index=gpu_index))
-                self.containers_spawned.append(container_name)
-                print(f"Container {worker_name} started successfully.")
-                return True
-            except subprocess.SubprocessError as e:
-                print(f"An error occurred while running the container: {e}")
-                return False
+            worker_name = f"{hostname}-{container_name}"
+            self.running_containers.append(Container(worker_name, container_name, 0, creation_time=creation_time, gpu_index=gpu_index))
+            self.containers_spawned.append(container_name)
+            print(f"Container {worker_name} started successfully.")
+            return True
+            # except subprocess.SubprocessError as e:
+            #     print(f"An error occurred while running the container: {e}")
+            #     return False
         else:
             print("The server is currently at high load. Skipping worker creation")
             return False
