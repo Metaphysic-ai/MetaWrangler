@@ -37,7 +37,7 @@ class ContainerManager:
         gpu_suffix = "gpu_" if gpu else ""
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
-        index = f"_{self.spawn_index}_{datetime.now().strftime('%Y/%m/%d_%H/%M/%S')}"
+        index = f"_{self.spawn_index}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
         worker_name = hostname + "-" + container_name
