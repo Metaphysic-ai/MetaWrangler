@@ -280,16 +280,16 @@ class MetaWrangler():
         self.create_task_event(id=4, mem=32, cpus=16, gpu=True, batch_size=10, timeout=10,
                                creation_time=managar_creation_time)
 
-        print("### DEBUG: Numbers of tasks in stack:", len(self.task_event_stack))
-
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
+            print("### DEBUG: Numbers of tasks in stack:", len(self.task_event_stack))
 
             if mng.running_containers:
                 mng.kill_idle_containers()
 
+            print("XXX Starting sleep timer")
             time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
-
+            print("XXX Ending sleep timer")
             print("Service is checking for tasks...")
             if self.task_event_stack:
                 task_event = self.task_event_stack[0]
@@ -306,7 +306,6 @@ class MetaWrangler():
                     self.task_event_stack.pop(0)
                 else:
                     self.task_event_stack.append(self.task_event_stack.pop(0)) ### put task to the end of the stack in case one gets stuck
-            print("### DEBUG: Numbers of tasks in stack:", len(self.task_event_stack))
 
 
 if __name__ == "__main__":
