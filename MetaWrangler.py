@@ -122,15 +122,16 @@ class MetaWrangler():
     def is_worker_idle(self, worker, creation_time, delta_min=5):
         time_difference = datetime.now() - datetime.strptime(creation_time, "%y%m%d_%H%M%S")
         minutes_difference = time_difference.total_seconds() / 60
+        worker_db = wrangler.get_worker_db(worker)
+        last_render_time_str = worker_db["info"]["StatDate"]
+
         if minutes_difference > delta_min:
             return False
 
-        worker_db = wrangler.get_worker_db(worker)
-        if not worker_db["info"]:
+        elif not worker_db["info"]:
             return False
 
-        last_render_time_str = worker_db["info"]["StatDate"]
-        if last_render_time_str is None:
+        elif last_render_time_str is None:
             return False
         else:
             # Parse the last render time
