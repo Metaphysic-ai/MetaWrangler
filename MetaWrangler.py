@@ -28,14 +28,14 @@ class MetaWrangler():
         self.con = Connect(self.get_local_ip(), 8081)
         self.task_event_stack = []
         self.task_event_history = {}
-        self.con_mng = ContainerManager(self)
-        self.job_mng = JobManager(self)
 
         logging.basicConfig(filename='/mnt/x/temp/4renderserver/MetaWrangler3.logs',
                             format='%(asctime)s %(message)s',
                             filemode='w')
         self.logger = logging.getLogger()
         self.logger.setLevel(level=logging.DEBUG)
+        self.con_mng = ContainerManager(self)
+        self.job_mng = JobManager(self)
 
     def get_local_ip(self):
         import socket
