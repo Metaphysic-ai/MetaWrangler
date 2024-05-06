@@ -353,6 +353,14 @@ if __name__ == "__main__":
     def info_mode():
         wrangler.job_mng.submit_job_from_path("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-CA/wro_6300_metaSim.v001.nk")
 
+    def manual_mode():
+        for n in range(5):
+            gpu = True if n < 3 else False
+            metajob = MetaJob({})
+            profile = TaskProfile(id=n, mem=16, cpus=16, gpu=gpu, creation_time=str(datetime.now()), batch_size=10, timeout=10)
+            metajob.profile = profile
+            wrangler.task_event_stack.append(metajob)
+        wrangler.run()
 
     if __name__ == "__main__":
         if len(sys.argv) == 1:
@@ -362,6 +370,8 @@ if __name__ == "__main__":
                 run_mode()
             elif sys.argv[1] == "--info":
                 info_mode()
+            elif sys.argv[1] == "--manuel":
+                manual_mode()
             else:
                 print("Invalid option. Usage: python MetaWrangler.py [--run | --info]")
                 sys.exit(1)
