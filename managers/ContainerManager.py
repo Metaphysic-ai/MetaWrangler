@@ -17,6 +17,9 @@ class Container:
         self.markedForShutdown = False
         self.creation_time = creation_time
 
+    def __repr__(self):
+        return f'Container(\'{self.name}\', {self.id})'
+
 class ContainerManager:
     def __init__(self, wrangler):
         self.wrangler = wrangler
@@ -75,7 +78,7 @@ class ContainerManager:
     def kill_container(self, container):
         try:
             print(f"Killing container: {container.name}")
-            subprocess.run(f"podman stop {container.suffix} || true", shell=True)
+            subprocess.Popen(f"podman stop {container.suffix} || true", shell=True)
             self.free_up_cpus(container.cpuset)
             if container.gpu_index is not None:
                 self.free_up_gpu(container.gpu_index)
