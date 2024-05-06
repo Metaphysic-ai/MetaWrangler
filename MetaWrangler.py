@@ -122,9 +122,9 @@ class MetaWrangler():
     def is_worker_idle(self, worker, delta_min=5):
         time_difference = datetime.now() - datetime.strptime(worker.creation_time, "%y%m%d_%H%M%S")
         minutes_difference = time_difference.total_seconds() / 60
-        worker_db = wrangler.get_worker_db(worker.suffix)
+        worker_db = wrangler.get_worker_db(worker.name)
         last_render_time_str = datetime.now()
-        self.logger.debug(str(worker.suffix))
+        self.logger.debug(str(worker.name))
         self.logger.debug(worker_db)
         self.logger.debug(f"######## MINUTES DIFFERENCE: {minutes_difference} with delta {delta_min}")
         if minutes_difference > delta_min:
