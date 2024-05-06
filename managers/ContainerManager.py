@@ -10,7 +10,7 @@ class Container:
     def __init__(self, name, suffix, id, mem="2g", cpuset=(8, 9), gpu=False, gpu_index=None, creation_time=None):
         self.name = name
         self.suffix = suffix
-        self.id = id+"_"+datetime.now.strftime("%Y/%m/%d_%H/%M/%S")
+        self.id = id
         self.mem = mem
         self.cpuset = cpuset
         self.gpu = gpu if gpu_index is None else True
@@ -37,7 +37,7 @@ class ContainerManager:
         gpu_suffix = "gpu_" if gpu else ""
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
-        index = f"_{self.spawn_index}"
+        index = f"_{self.spawn_index}_{datetime.now.strftime('%Y/%m/%d_%H/%M/%S')}"
         self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
         worker_name = hostname + "-" + container_name
