@@ -130,25 +130,25 @@ class MetaWrangler():
         self.logger.debug(str(worker.name))
         self.logger.debug(worker_db)
         self.logger.debug(f"######## MINUTES DIFFERENCE: {minutes_difference} with delta {delta_min}")
-        if minutes_difference > delta_min:
+        if minutes_difference < delta_min:
             return False
 
-        if not worker_db["info"]:
+        if worker_db["info"]:
             if len(worker_db["info"]):
-                last_render_time_str = worker_db["StatDate"]
+                last_render_time_str = worker_db["info"]["StatDate"]
 
-        else:
-            if last_render_time_str is None:
-                last_render_time_str = datetime.now()
+        if last_render_time_str is None:
+            return False
+
             # Parse the last render time
-            last_render_time = self.parse_datetime(last_render_time_str)
+        last_render_time = self.parse_datetime(last_render_time_str)
 
-            # Get the current time with timezone aware if required
-            current_time = datetime.now(timezone.utc)
+        # Get the current time with timezone aware if required
+        current_time = datetime.now(timezone.utc)
 
-            # Check if the difference is greater than 5 minutes
-            difference = current_time - last_render_time
-            return difference > timedelta(minutes=delta_min)
+        # Check if the difference is greater than 5 minutes
+        difference = current_time - last_render_time
+        return difference > timedelta(minutes=delta_min)
 
     def get_all_tasks(self):
 
@@ -330,10 +330,17 @@ if __name__ == "__main__":
         wrangler.run()
 
     def info_mode():
-        print("Entering Status(Analysis mode...")
-        worker_db = wrangler.get_worker_db("renderserver-meta_16_16_0")
-        print(worker_db)
-        print("THIS ISN'T FULLY IMPLEMENTED YET")
+        from managers.ContainerManager import Container
+        new_datetime = datetime.now() - timedelta(minutes=5)
+        worker = Container(name="renderserver-meta_gpu_4_4_2_240506_074057", suffix="meta_gpu_4_4_2_240506_074057",
+                           id="2_240506_074057", creation_time=new_datetime.strftime('%y%m%d_%H%M%S'))
+        print(worker)
+        print(wrangler.is_worker_idle(worker))
+        worker = Container(name="bad_container", suffix="bad",
+                           id="2_240506_074057", creation_time=new_datetime.strftime('%y%m%d_%H%M%S'))
+        print(worker)
+        print(wrangler.is_worker_idle(worker))
+
 
     if __name__ == "__main__":
         if len(sys.argv) == 1:
