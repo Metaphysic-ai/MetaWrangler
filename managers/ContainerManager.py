@@ -78,18 +78,15 @@ class ContainerManager:
             return False
 
     def kill_container(self, container):
-        try:
-            print(f"Killing container: {container.name}")
-            # the same profile and the same id is created, it would kill it on spawn.
-            subprocess.Popen(f"podman stop --timeout 0 {container.suffix} || true", shell=True)
-            self.wrangler.con.Slaves.DeleteSlave(container.name)
-            self.free_up_cpus(container.cpuset)
-            if container.gpu_index is not None:
-                self.free_up_gpu(container.gpu_index)
+        print(f"Killing container: {container.name}")
+        # the same profile and the same id is created, it would kill it on spawn.
+        subprocess.Popen(f"podman stop --timeout 0 {container.suffix} || true", shell=True)
+        self.wrangler.con.Slaves.DeleteSlave(container.name)
+        self.free_up_cpus(container.cpuset)
+        if container.gpu_index is not None:
+            self.free_up_gpu(container.gpu_index)
 
             print(f"Container {container.name} killed successfully.")
-        except subprocess.CalledProcessError as e:
-            print(f"An error occurred while killing the container: {e}")
 
     def free_up_cpus(self, cpuset):
         for cpu_index in cpuset:
@@ -200,10 +197,7 @@ class ContainerManager:
 
         for container in containers_to_shutdown:
             self.kill_container(container)
-            try:
-                self.running_containers.remove(container)
-            except ValueError as e:
-                print("Couldn't remove Container from running Container List:", e)
+            self.running_containers.remove(container)
 
 
 if __name__=="__main__":
