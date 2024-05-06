@@ -4,12 +4,13 @@ import psutil
 import os
 import asyncio
 import GPUtil
+from datetime import datetime
 
 class Container:
     def __init__(self, name, suffix, id, mem="2g", cpuset=(8, 9), gpu=False, gpu_index=None, creation_time=None):
         self.name = name
         self.suffix = suffix
-        self.id = id
+        self.id = id+"_"+datetime.now.strftime("%Y/%m/%d_%H/%M/%S")
         self.mem = mem
         self.cpuset = cpuset
         self.gpu = gpu if gpu_index is None else True
