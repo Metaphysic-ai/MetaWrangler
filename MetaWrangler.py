@@ -268,16 +268,17 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
+        managar_creation_time = datetime.now().strftime("%y%m%d_%H%M%S")
         self.create_task_event(id=0, mem=16, cpus=16, gpu=False, batch_size=10, timeout=10,
-                               creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
+                               creation_time=managar_creation_time)
         self.create_task_event(id=1, mem=2, cpus=1, gpu=False, batch_size=10, timeout=10,
-                               creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
+                               creation_time=managar_creation_time)
         self.create_task_event(id=2, mem=4, cpus=4, gpu=True, batch_size=10, timeout=10,
-                               creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
+                               creation_time=managar_creation_time)
         self.create_task_event(id=3, mem=8, cpus=2, gpu=False, batch_size=10, timeout=10,
-                               creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
+                               creation_time=managar_creation_time)
         self.create_task_event(id=4, mem=32, cpus=16, gpu=True, batch_size=10, timeout=10,
-                               creation_time=datetime.now().strftime("%/%m%d_%H%M%S"))
+                               creation_time=managar_creation_time)
 
         print("### DEBUG: Numbers of tasks in stack:", len(self.task_event_stack))
 
