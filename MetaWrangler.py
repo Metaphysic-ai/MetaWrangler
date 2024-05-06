@@ -123,7 +123,7 @@ class MetaWrangler():
         if not worker_db["info"]:
             return False
 
-        last_render_time_str = worker_db["info"]["LastRenderTime"]
+        last_render_time_str = worker_db["info"]["StatDate"]
         if last_render_time_str is None:
             return False
         else:
@@ -295,8 +295,9 @@ class MetaWrangler():
 
 if __name__ == "__main__":
     wrangler = MetaWrangler()
-    # worker_db = wrangler.get_worker_db("renderserver-meta_4_1_1")
-    wrangler.run()
+    worker_db = wrangler.get_worker_db("renderserver-meta_16_16_0")
+    print(worker_db)
+    # wrangler.run()
 
 # task_db = wrangler.get_all_tasks()
 # date_keys = ['Date', 'DateStart', 'DateStart', 'DateComp', 'Start', 'StartRen', 'Comp']
