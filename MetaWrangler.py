@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 from managers.ContainerManager import ContainerManager
+import logging
 
 class TaskEvent():
     def __init__(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
@@ -21,6 +22,8 @@ class MetaWrangler():
         self.con = Connect(self.get_local_ip(), 8081)
         self.task_event_stack = []
         self.task_event_history = {}
+        self.logger = logging.getLogger()
+        logging.basicConfig(filename='~/MetaWrangler3.logs', encoding='utf-8', level=logging.DEBUG)
 
     def get_local_ip(self):
         import socket
@@ -282,7 +285,7 @@ class MetaWrangler():
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
-            print("### DEBUG: Numbers of tasks in stack:", len(self.task_event_stack))
+            self.logger.debug("Numbers of tasks in stack:", len(self.task_event_stack))
 
             if mng.running_containers:
                 mng.kill_idle_containers()
@@ -299,7 +302,7 @@ class MetaWrangler():
                                             cpus=task_event.required_cpus,
                                             gpu=task_event.required_gpu,
                                             creation_time=task_event.creation_time)
-                print("##### DEBUGDEBUG: RESULT OF SPAWNCONTAINER:", result)
+                self.logger.debug("RESULT OF SPAWNCONTAINER:", result)
                 if result:
                     print("Job triggered!")
                     self.task_event_history[str(task_event.id)] = {"event": task_event}
@@ -320,7 +323,7 @@ if __name__ == "__main__":
         print("Entering Status(Analysis mode...")
         worker_db = wrangler.get_worker_db("renderserver-meta_16_16_0")
         print(worker_db)
-        print("### DEBUG: THIS ISN'T FULLY IMPLEMENTED YET ###")
+        print("THIS ISN'T FULLY IMPLEMENTED YET")
 
     if __name__ == "__main__":
         if len(sys.argv) == 1:
