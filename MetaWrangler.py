@@ -295,6 +295,7 @@ class MetaWrangler():
                 task_event = self.task_event_stack[0]
                 result = mng.spawn_container(hostname=hostname,
                                             mem=task_event.required_mem,
+                                            id=task_event.id,
                                             cpus=task_event.required_cpus,
                                             gpu=task_event.required_gpu,
                                             creation_time=task_event.creation_time)

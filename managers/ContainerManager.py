@@ -33,12 +33,13 @@ class ContainerManager:
         self.containers_spawned = []
         print("### DEBUG: [FOUND GPUS ON INIT]", GPUtil.getAvailable(limit=4), "->", self.occupied_gpus)
 
-    def spawn_container(self, hostname, mem=2, cpus=1, gpu=False, creation_time=None):
+    def spawn_container(self, hostname, id=None, mem=2, cpus=1, gpu=False, creation_time=None):
         print("#######DEBUGDEBUGDEBUG", hostname, mem, cpus, gpu, creation_time)
         gpu_suffix = "gpu_" if gpu else ""
         mem_suffix = str(mem)
         cpus_suffix = f"_{cpus}"
-        index = f"_{self.spawn_index}_{creation_time}"
+        id = self.spawn_index if id is None else id
+        index = f"_{self.id}_{creation_time}"
         self.spawn_index += 1
         container_name = "meta_"+gpu_suffix+mem_suffix+cpus_suffix+index
         worker_name = hostname + "-" + container_name
