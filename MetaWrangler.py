@@ -309,13 +309,14 @@ class MetaWrangler():
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
             self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
-            jobs = self.get_running_jobs()
-            for job in jobs:
-                metajob = MetaJob(job)
-                metajob.profile = self.get_job_profile(metajob.job_dict["Props"]["PlugInfo"]["SceneFile"])
-                self.task_event_stack.append(metajob)
 
             if not self.manual_mode:
+                jobs = self.get_running_jobs()
+                for job in jobs:
+                    metajob = MetaJob(job)
+                    metajob.profile = self.get_job_profile(metajob.job_dict["Props"]["PlugInfo"]["SceneFile"])
+                    self.task_event_stack.append(metajob)
+
                 if self.con_mng.running_containers:
                     self.con_mng.kill_idle_containers()
 
