@@ -5,9 +5,10 @@ import time
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 from managers.ContainerManager import ContainerManager
+from managers.JobManager import JobManager
 import logging
 
-class TaskEvent():
+class TaskProfile():
     def __init__(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
         self.id = id
         self.required_mem = mem
@@ -267,8 +268,13 @@ class MetaWrangler():
         return self.con.Tasks.GetJobTask(jid, tid)
 
     def create_task_event(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
-        task_event = TaskEvent(id, mem, cpus, gpu, creation_time, batch_size, timeout)
+        task_event = TaskProfile(id, mem, cpus, gpu, creation_time, batch_size, timeout)
         self.task_event_stack.append(task_event)
+
+    def get_job_profile(self, script_path):
+        profile = TaskProfile(id=0, mem=4, cpus=2, gpu=False,
+        batch_size=10, timeout=10, creation_time=datetime.now())
+        return profile
 
     def run(self):
         import socket
@@ -281,17 +287,7 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
-        managar_creation_time = datetime.now().strftime("%y%m%d_%H%M%S")
-        self.create_task_event(id=0, mem=16, cpus=16, gpu=False, batch_size=10, timeout=10,
-                               creation_time=managar_creation_time)
-        self.create_task_event(id=1, mem=2, cpus=1, gpu=False, batch_size=10, timeout=10,
-                               creation_time=managar_creation_time)
-        self.create_task_event(id=2, mem=4, cpus=4, gpu=True, batch_size=10, timeout=10,
-                               creation_time=managar_creation_time)
-        self.create_task_event(id=3, mem=8, cpus=2, gpu=False, batch_size=10, timeout=10,
-                               creation_time=managar_creation_time)
-        self.create_task_event(id=4, mem=32, cpus=16, gpu=True, batch_size=10, timeout=10,
-                               creation_time=managar_creation_time)
+
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
@@ -327,19 +323,12 @@ if __name__ == "__main__":
     wrangler = MetaWrangler()
 
     def run_mode():
+        job_mng = JobManager(wrangler)
+        job_mng.simulateJobs()
         wrangler.run()
 
     def info_mode():
-        from managers.ContainerManager import Container
-        new_datetime = datetime.now() - timedelta(minutes=5)
-        worker = Container(name="renderserver-meta_gpu_4_4_2_240506_074057", suffix="meta_gpu_4_4_2_240506_074057",
-                           id="2_240506_074057", creation_time=new_datetime.strftime('%y%m%d_%H%M%S'))
-        print(worker)
-        print(wrangler.is_worker_idle(worker))
-        worker = Container(name="bad_container", suffix="bad",
-                           id="2_240506_074057", creation_time=new_datetime.strftime('%y%m%d_%H%M%S'))
-        print(worker)
-        print(wrangler.is_worker_idle(worker))
+        job_mng = JobManager(wrangler)
 
 
     if __name__ == "__main__":
