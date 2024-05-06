@@ -318,7 +318,7 @@ class MetaWrangler():
                 self.con_mng.kill_idle_containers()
 
             if self.task_event_history:
-                for k, v in self.task_event_history:
+                for k in self.task_event_history.keys():
                     self.assign_containers_to_job(self.task_event_history[k]["job"])
 
             time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
