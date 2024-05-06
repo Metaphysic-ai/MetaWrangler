@@ -122,8 +122,7 @@ class MetaWrangler():
     def is_worker_idle(self, worker, creation_time, delta_min=5):
         time_difference = datetime.now() - datetime.strptime(creation_time, "%y%m%d_%H%M%S")
         minutes_difference = time_difference.total_seconds() / 60
-        x_minutes = 2
-        if minutes_difference > x_minutes:
+        if minutes_difference > delta_min:
             return False
 
         worker_db = wrangler.get_worker_db(worker)
