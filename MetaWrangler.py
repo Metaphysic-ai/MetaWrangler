@@ -133,8 +133,6 @@ class MetaWrangler():
             if len(worker_db["info"]):
                 last_render_time_str = worker_db["StatDate"]
 
-        elif last_render_time_str is None:
-            return False
         else:
             # Parse the last render time
             last_render_time = self.parse_datetime(last_render_time_str)
