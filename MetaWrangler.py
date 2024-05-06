@@ -272,10 +272,11 @@ class MetaWrangler():
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
-            time.sleep(3)   # Wait for 3 seconds before the next execution
 
             if mng.running_containers:
                 mng.kill_idle_containers()
+
+            time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
 
             print("Service is checking for tasks...")
             if self.task_event_stack:
