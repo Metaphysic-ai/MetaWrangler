@@ -291,7 +291,8 @@ class MetaWrangler():
                     and metajob.profile.required_gpu == container.gpu:
                 containers_to_assign.append(container.name)
 
-        self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["Props"]["_id"], containers_to_assign)
+        self.logger.debug("Assigning containers: "+str(
+            self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["Props"]["_id"], containers_to_assign)))
 
     def run(self):
         import socket
