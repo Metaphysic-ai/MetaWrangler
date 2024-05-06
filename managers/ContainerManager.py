@@ -104,13 +104,13 @@ class ContainerManager:
                     cores_assigned.append(core_index)
                     cpu_counter -= 1
             self.wrangler.logger.debug("[Assigning cpus]: Occupied:", str(self.occupied_cpus.count(True)), "Free:",
-                  self.occupied_cpus.count(False))
+                  str(self.occupied_cpus.count(False)))
             return tuple(cores_assigned)
 
     def free_up_gpu(self, gpu_index):
         self.occupied_gpus[gpu_index] = False
         self.wrangler.logger.debug("[Freeing up gpu]: Occupied:", str(self.occupied_gpus.count(True)), "Free:",
-              self.occupied_gpus.count(False))
+              str(self.occupied_gpus.count(False)))
 
     def assign_gpu(self):
         if self.occupied_gpus.count(False) < 1:  ### Check if there are enough free gpus available
@@ -120,7 +120,7 @@ class ContainerManager:
                 if gpu_status == False:
                     self.occupied_gpus[gpu_index] = True
                     self.wrangler.logger.debug("[Assigning gpu]: Occupied:", str(self.occupied_gpus.count(True)), "Free:",
-                          self.occupied_gpus.count(False))
+                          str(self.occupied_gpus.count(False)))
                     return gpu_index
 
     def get_container_command(self, hostname, name, memory, cpuset, gpu, gpu_index):

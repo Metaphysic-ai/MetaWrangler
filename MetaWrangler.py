@@ -120,7 +120,7 @@ class MetaWrangler():
             raise ValueError(f"Date format for '{date_str}' is not supported")
 
     def is_worker_idle(self, worker, creation_time, delta_min=5):
-        time_difference = datetime.now() - creation_time
+        time_difference = datetime.now() - datetime.strptime(creation_time, "%y%m%d_%H%M%S")
         minutes_difference = time_difference.total_seconds() / 60
         x_minutes = 2
         if minutes_difference > x_minutes:
