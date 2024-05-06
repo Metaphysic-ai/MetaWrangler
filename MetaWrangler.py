@@ -36,6 +36,7 @@ class MetaWrangler():
         self.logger.setLevel(level=logging.DEBUG)
         self.con_mng = ContainerManager(self)
         self.job_mng = JobManager(self)
+        self.manual_mode = False
 
     def get_local_ip(self):
         import socket
@@ -314,12 +315,13 @@ class MetaWrangler():
                 metajob.profile = self.get_job_profile(metajob.job_dict["Props"]["PlugInfo"]["SceneFile"])
                 self.task_event_stack.append(metajob)
 
-            if self.con_mng.running_containers:
-                self.con_mng.kill_idle_containers()
+            if not self.manual_mode:
+                if self.con_mng.running_containers:
+                    self.con_mng.kill_idle_containers()
 
-            # if self.task_event_history:
-            #     for k in self.task_event_history.keys():
-            #         self.assign_containers_to_job(self.task_event_history[k]["job"])
+                if self.task_event_history:
+                    for k in self.task_event_history.keys():
+                        self.assign_containers_to_job(self.task_event_history[k]["job"])
 
             time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
             print("Service is checking for tasks...")
@@ -354,6 +356,7 @@ if __name__ == "__main__":
         wrangler.job_mng.submit_job_from_path("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-CA/wro_6300_metaSim.v001.nk")
 
     def manual_mode():
+        wrangler.manual_mode = True
         for n in range(5):
             gpu = True if n < 3 else False
             metajob = MetaJob({})
