@@ -18,6 +18,11 @@ class TaskProfile():
         self.batch_size = batch_size
         self.timeout = timeout
 
+class MetaJob():
+    def __init__(self, job_dict):
+        self.job_dict = job_dict
+        self.profile = None
+
 class MetaWrangler():
     def __init__(self):
         self.con = Connect(self.get_local_ip(), 8081)
@@ -41,9 +46,9 @@ class MetaWrangler():
             ip = "Could not determine local IP"
         return ip
 
-    def get_running_jobs(self):
+    def get_running_jobs(self, status="Queued"):
         jobs = self.con.Jobs.GetJobs()
-        return [job for job in jobs if job["RenderingChunks"] or job["QueuedChunks"] ]
+        return [job for job in jobs if job[f"{status}Chunks"] ]
 
     def flatten_dict(self, d, parent_key='', sep='_'):
         items = []
@@ -273,7 +278,7 @@ class MetaWrangler():
 
     def get_job_profile(self, script_path):
         profile = TaskProfile(id=0, mem=4, cpus=2, gpu=False,
-        batch_size=10, timeout=10, creation_time=datetime.now())
+        batch_size=10, timeout=10, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')))
         return profile
 
     def run(self):
@@ -287,21 +292,26 @@ class MetaWrangler():
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
         mng = ContainerManager(self)
+        job_mng = JobManager(self)
 
 
         while True:
             # print(self.get_running_jobs())  # Execute your periodic task
             self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
+            jobs = self.get_running_jobs("Queued")
+            for job in jobs:
+                metajob = MetaJob(job)
+                metajob.profile = self.get_job_profile(metajob.job_dict["Props"]["PlugInfo"]["SceneFile"])
+                self.task_event_stack.append(metajob)
 
             if mng.running_containers:
                 mng.kill_idle_containers()
 
-            print("XXX Starting sleep timer")
             time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
-            print("XXX Ending sleep timer")
             print("Service is checking for tasks...")
             if self.task_event_stack:
-                task_event = self.task_event_stack[0]
+                metajob = self.task_event_stack[0]
+                task_event = metajob.profile
                 result = mng.spawn_container(hostname=hostname,
                                             mem=task_event.required_mem,
                                             id=task_event.id,
@@ -311,7 +321,7 @@ class MetaWrangler():
                 self.logger.debug(f"RESULT OF SPAWNCONTAINER: {result}")
                 if result:
                     print("Job triggered!")
-                    self.task_event_history[str(task_event.id)] = {"event": task_event}
+                    self.task_event_history[str(task_event.id)] = {"profile": task_event, "job":metajob}
                     self.task_event_stack.pop(0)
                 else:
                     self.task_event_stack.append(self.task_event_stack.pop(0)) ### put task to the end of the stack in case one gets stuck
@@ -324,7 +334,6 @@ if __name__ == "__main__":
 
     def run_mode():
         job_mng = JobManager(wrangler)
-        job_mng.simulateJobs()
         wrangler.run()
 
     def info_mode():

@@ -32,9 +32,9 @@ class JobManager:
         Name={job_name}
         Comment=
         Department=Comp
-        Pool=comp
+        Pool=
         SecondaryPool=
-        Group=nuke
+        Group=
         Priority=10
         MachineLimit=0
         TaskTimeoutMinutes={timeout}
@@ -82,10 +82,10 @@ class JobManager:
         StackSize=0
         """
 
-        with open(job_file_path, "a+") as f:
+        with open(job_file_path, "w+") as f:
             f.write(job_info_str.strip())
 
-        with open(plugin_file_path, "a+") as f:
+        with open(plugin_file_path, "w+") as f:
             f.write(plugin_info_str.strip())
 
         subprocess.run(["/opt/Thinkbox/Deadline10/bin/deadlinecommand",
