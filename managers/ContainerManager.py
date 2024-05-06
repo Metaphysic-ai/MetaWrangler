@@ -78,6 +78,9 @@ class ContainerManager:
     def kill_container(self, container):
         try:
             print(f"Killing container: {container.name}")
+            suffix_for_shutdown = container.suffix+"_MARKEDFORSHUTDOWN" # fixes issue where when a worker with
+            # the same profile and the same id is created, it would kill it on spawn.
+            subprocess.run(f"rename {container.suffix} {suffix_for_shutdown}", shell=True)
             subprocess.Popen(f"podman stop {container.suffix} || true", shell=True)
             self.free_up_cpus(container.cpuset)
             if container.gpu_index is not None:
