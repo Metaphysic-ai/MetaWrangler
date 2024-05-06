@@ -23,7 +23,7 @@ class MetaWrangler():
         self.task_event_stack = []
         self.task_event_history = {}
         self.logger = logging.getLogger()
-        logging.FileHandler(filename='/mnt/x/temp/4renderserver/MetaWrangler3.logs', mode='a', encoding='utf-8', delay=False)
+        logging.FileHandler(filename='/mnt/x/temp/4renderserver/MetaWrangler3.logs', mode='w', encoding='utf-8', delay=False)
         self.logger.setLevel(level=logging.DEBUG)
 
     def get_local_ip(self):
