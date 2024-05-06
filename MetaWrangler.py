@@ -292,7 +292,7 @@ class MetaWrangler():
                 containers_to_assign.append(container.name)
 
         self.logger.debug("Assigning containers: "+str(
-            self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["Props"]["id"], containers_to_assign)))
+            self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["_id"], containers_to_assign)))
 
     def run(self):
         import socket
