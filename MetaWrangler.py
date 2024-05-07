@@ -85,12 +85,18 @@ class MetaWrangler():
 
     def calculate_task_duration(self, task):
 
+        if not ("StartRen" in task and "Comp" in task):
+            return None
+
         start_time = task['StartRen']
         completion_time = task['Comp']
 
         # Use the new parse function
         start_dt = self.parse_datetime(start_time)
         completion_dt = self.parse_datetime(completion_time)
+
+        if (start_dt is None or completion_dt is None):
+            return None
 
         # Calculate the duration in seconds
         duration_seconds = (completion_dt - start_dt).total_seconds()
@@ -140,10 +146,7 @@ class MetaWrangler():
             try:
                 return datetime.strptime(str(date_str), fmt)
             except ValueError:
-                continue
-
-            # If no format matches, raise an exception or return None
-            raise ValueError(f"Date format for '{date_str}' is not supported")
+                return None
 
     def is_worker_idle(self, worker, delta_min=5):
         time_in_idle = datetime.strptime(worker.creation_time, "%y%m%d_%H%M%S")

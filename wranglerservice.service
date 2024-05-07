@@ -1,0 +1,12 @@
+[Unit]
+Description=MetaWrangler Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/home/sadmin/repos/MetaWrangler
+ExecStart=/home/sadmin/repos/MetaWrangler/venv/bin/python /home/sadmin/repos/MetaWrangler/MetaWrangler.py --run
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
