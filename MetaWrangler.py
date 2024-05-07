@@ -7,6 +7,7 @@ import pandas as pd
 from managers.ContainerManager import ContainerManager
 from managers.JobManager import JobManager
 import logging
+from utils import DeadlineUtility
 
 class TaskProfile():
     def __init__(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
@@ -19,9 +20,28 @@ class TaskProfile():
         self.timeout = timeout
 
 class MetaJob():
-    def __init__(self, job_dict):
-        self.job_dict = job_dict
+    def __init__(self, wrangler):
+        self.wrangler = wrangler
+        self.info = {}
         self.profile = None
+        self.assigned_workers = []
+        self.history = []
+        self.tasks = []
+        self.nodes = []
+
+    def submit(self):
+        return wrangler.con.Jobs.SubmitJobs([wrangler.deadline_utility.get_job_plug_info(self.info)])
+
+class MetaTask():
+    def __init__(self, wrangler):
+        self.wrangler = wrangler
+        self.info = {} # 'JobId', 'TaskId', etc.
+        self.profile = None
+        self.assigned_workers = []
+        self.history = []
+
+    def requeue(self):
+        return wrangler.con.Tasks.RequeueJobTasks(self.info['JobID'], self.info['TaskID'])
 
 class MetaWrangler():
     def __init__(self):
@@ -37,6 +57,7 @@ class MetaWrangler():
         self.con_mng = ContainerManager(self)
         self.job_mng = JobManager(self)
         self.manual_mode = False
+        self.deadline_utility = DeadlineUtility(self.con)
 
     def get_local_ip(self):
         import socket
@@ -58,10 +79,6 @@ class MetaWrangler():
         for k, v in d.items():
             if isinstance(v, dict):
                 items.extend(self.flatten_dict(v, k, sep=sep).items())
-            elif isinstance(v, list):
-                # if len(v) > 1:
-                #     print(f"List at key '{k}' has mself.con = Connect(self.get_local_ip(), 8081)ultiple elements; only the first element is used.")
-                items.append((k, v[0] if v else None))
             else:
                 items.append((k, v))
         return dict(items)
@@ -149,71 +166,16 @@ class MetaWrangler():
         if last_render_time_str is None:
             return False
 
-            # Parse the last render time
         last_render_time = self.parse_datetime(last_render_time_str)
 
-        # Get the current time with timezone aware if required
         current_time = datetime.now(timezone.utc)
 
-        # Check if the difference is greater than 5 minutes
         difference = current_time - last_render_time
         return difference > timedelta(minutes=delta_min)
 
-    def get_all_tasks(self):
+    def get_discarded_keys(self):
+        ### TODO: Replace manual dredgework with stuff founded on data.
 
-        # return self.con.Tasks.GetJobTasks()
-        # return self.con.Jobs.GetJobs()
-        def add_total_frames_field(task):
-            frames = task["JobFrames"]
-            if len(frames.split(",")) > 1: ### Sometimes it returns the frames as a list of individual, comma-separated frames.
-                task["TotalJobFrames"] = len(frames.split(","))
-            elif len(frames.split("-")) < 2:
-                task["TotalJobFrames"] = 1
-            else:
-                min_frame, max_frame = (int(frames.split("-")[0]), int(frames.split("-")[1]))
-                total_frames = max_frame - min_frame
-                task["TotalJobFrames"] = total_frames
-            return task
-
-        def add_resource_info(task):
-            import re
-            # Extract the relevant information from the worker name
-            worker_name = task.get("worker_name", "")
-
-            # Initialize default values
-            task["MemoryAssigned"] = None
-            task["CoresAssigned"] = None
-            task["GPUAssigned"] = None
-
-            # Regex to parse the worker name pattern
-            # This pattern checks for the presence of 'gpu', captures the memory size, and optionally captures two more numbers
-            regex_pattern = r'renderserver-(gpu_)?(\d+)g(_(\d+))?(_(\d+))?'
-            match = re.search(regex_pattern, worker_name)
-
-            if match:
-                # Check for GPU presence
-                gpu = match.group(1) is not None
-                task["GPUAssigned"] = True if gpu else None
-
-                # Memory assigned
-                mem = int(match.group(2)) if match.group(2) else None
-                task["MemoryAssigned"] = mem
-
-                # Cores assigned - check if the correct groups are captured for cores
-                cores = None
-                if match.group(4) and match.group(6):
-                    # Third group is cores if three numbers are present and the first is GPU
-                    cores = int(match.group(6))
-                elif match.group(4) and gpu:
-                    # Second number is cores when two numbers are present with GPU
-                    cores = int(match.group(4))
-                task["CoresAssigned"] = cores
-            return task
-
-        task_db = []
-        job_call = self.con.Jobs.GetJobs()
-        ### Purging a bunch of keys that should be irrelevant to job success to not clutter the model
-        ### (After WIP use something like PCA to actually see which keys mostly contribute to job success.)
         discarded_keys = ["Region", "Cmmt", "Grp", "Pool", "SecPool", "ReqAss", "ScrDep",
                           "AuxSync", "Int", "IntPer", "RemTmT", "Seq", "Reload", "NoEvnt",
                           "OnComp", "Protect", "PathMap", "AutoTime", "TimeScrpt",
@@ -232,37 +194,118 @@ class MetaWrangler():
                           "MainEnd", "Tile", "TileFrame", "TileCount", "TileX", "TileY", "Aux",
                           "Bad", "DataSize", "ConcurrencyToken", "ExtraElements", "WtgStrt",
                           "NormMult", "Frames"]
+        return discarded_keys
+
+    def add_total_frames_field(self, task):
+        frames = task["JobFrames"]
+        if len(frames.split(
+                ",")) > 1:  ### Sometimes it returns the frames as a list of individual, comma-separated frames.
+            task["TotalJobFrames"] = len(frames.split(","))
+        elif len(frames.split("-")) < 2:
+            task["TotalJobFrames"] = 1
+        else:
+            min_frame, max_frame = (int(frames.split("-")[0]), int(frames.split("-")[1]))
+            total_frames = max_frame - min_frame
+            task["TotalJobFrames"] = total_frames
+        return task
+
+    def combine_job_task_dict(self, deadline_job):
+        job = self.flatten_dict(deadline_job)
+        job["JobFrames"] = job["Frames"]
+
+        try:
+            task_call = self.con.Tasks.GetJobTasks(job["_id"])["Tasks"]
+        except:
+            print(self.con.Tasks.GetJobTasks(job["_id"]))
+            print("Task call failed")
+            return
+
+        task_dicts = []
+
+        for task in task_call:
+            print(task)
+            task = self.flatten_dict(task)
+            task["RenderTime"] = self.calculate_task_duration(task)
+
+            # print(job)
+            # print(task)
+            combined_dict = {**job, **task}
+            combined_dict = self.add_resource_info(combined_dict)
+            combined_dict = self.add_total_frames_field(combined_dict)
+
+            for discard_key in self.get_discarded_keys():
+                try:
+                    del combined_dict[discard_key]
+                except:
+                    if discard_key in ["SchdDays", "AWSPortalAssetFileWhiteList", "StackSize", "Views",
+                                       "PerformanceProfilerDir", "PerformanceProfiler"]: ### These are only sporadically present in the data and seem to be of dubious use.
+                                                                                         ### Same as other discarded keys TODO: to run the numbers if the keys are actually irrelevant.
+                        pass
+                    else:
+                        print("Couldn't find", discard_key, "in the following Task:")
+                        print(combined_dict)
+                task_dicts.append(task)
+            return task_dicts
+
+    def add_resource_info(self, task):
+        import re
+        # Extract the relevant information from the worker name
+        worker_name = task.get("worker_name", "")
+
+        # Initialize default values
+        task["MemoryAssigned"] = None
+        task["CoresAssigned"] = None
+        task["GPUAssigned"] = None
+
+        # Regex to parse the worker name pattern
+        # This pattern checks for the presence of 'gpu', captures the memory size, and optionally captures two more numbers
+        regex_pattern = r'renderserver-(gpu_)?(\d+)g(_(\d+))?(_(\d+))?'
+        match = re.search(regex_pattern, worker_name)
+
+        if match:
+            # Check for GPU presence
+            gpu = match.group(1) is not None
+            task["GPUAssigned"] = True if gpu else None
+
+            # Memory assigned
+            mem = int(match.group(2)) if match.group(2) else None
+            task["MemoryAssigned"] = mem
+
+            # Cores assigned - check if the correct groups are captured for cores
+            cores = None
+            if match.group(4) and match.group(6):
+                # Third group is cores if three numbers are present and the first is GPU
+                cores = int(match.group(6))
+            elif match.group(4) and gpu:
+                # Second number is cores when two numbers are present with GPU
+                cores = int(match.group(4))
+            task["CoresAssigned"] = cores
+        return task
+
+    def get_metajob_from_deadline_job(self, deadline_job):
+        metajob = MetaJob(self)
+        metajob.profile = self.get_job_profile(deadline_job["Props"]["PlugInfo"]["SceneFile"])
+        for task_info in self.con.Tasks.GetJobTasks(deadline_job["_id"])["Tasks"]:
+            metatask = MetaTask(self)
+            metatask.info = self.deadline_utility.get_less_stupid_dictionary_keys(task_info)
+            metatask.profile = metajob.profile ### For now, deadline doesn't allow more granular than job level.
+            metajob.tasks.append(metatask)
+
+        job_info = self.flatten_dict(self.con.Jobs.GetJob(deadline_job["_id"]))
+        metajob.info = self.deadline_utility.get_less_stupid_dictionary_keys(job_info)
+        return metajob
+
+    def get_all_tasks(self):
+
+        task_db = []
+        job_call = self.con.Jobs.GetJobs()
 
         for n, job in enumerate(job_call):
             if n%100 == 0 and n!=0:
                 print(f"Parsed {n} of {len(job_call)} jobs.")
-            job = self.flatten_dict(job)
-            job["JobFrames"] = job["Frames"]
-            try:
-                task_call = self.con.Tasks.GetJobTasks(job["_id"])["Tasks"]
-            except:
-                print(self.con.Tasks.GetJobTasks(job["_id"]))
-                print("Task call failed")
-                return
-            for task in task_call:
-                task = self.flatten_dict(task)
-                task["RenderTime"] = self.calculate_task_duration(task)
+            combined_dict = self.combine_job_task_dict(job)
 
-                # print(job)
-                # print(task)
-                combined_dict = {**job, **task}
-                combined_dict = add_resource_info(combined_dict)
-                combined_dict = add_total_frames_field(combined_dict)
-                for discard_key in discarded_keys:
-                    try:
-                        del combined_dict[discard_key]
-                    except:
-                        if discard_key in ["SchdDays", "AWSPortalAssetFileWhiteList", "StackSize", "Views", "PerformanceProfilerDir", "PerformanceProfiler"]:
-                            pass
-                        else:
-                            print("Couldn't find", discard_key, "in the following Task:")
-                            print(combined_dict)
-                task_db.append(combined_dict)
+            task_db.append(combined_dict)
             # print(combined_dict)
         return task_db
 
@@ -279,7 +322,8 @@ class MetaWrangler():
         task_event = TaskProfile(id, mem, cpus, gpu, creation_time, batch_size, timeout)
         self.task_event_stack.append(task_event)
 
-    def get_job_profile(self, script_path):
+    def get_job_profile(self, job):
+        ### TODO: PLACEHOLDER
         profile = TaskProfile(id=0, mem=4, cpus=2, gpu=False,
         batch_size=10, timeout=10, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')))
         return profile
@@ -293,7 +337,7 @@ class MetaWrangler():
                 containers_to_assign.append(container.name)
 
         self.logger.debug("X#X#X#X#DEBUG: Assigning containers: "+str(
-            self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.job_dict["_id"], containers_to_assign)))
+            self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.info["_id"], containers_to_assign)))
 
     def run(self):
         import socket
@@ -314,7 +358,7 @@ class MetaWrangler():
                 jobs = self.get_running_jobs()
                 for job in jobs:
                     metajob = MetaJob(job)
-                    metajob.profile = self.get_job_profile(metajob.job_dict["Props"]["PlugInfo"]["SceneFile"])
+                    metajob.profile = self.get_job_profile(metajob.info["SceneFile"])
                     self.task_event_stack.append(metajob)
 
                 if self.con_mng.running_containers:
@@ -353,8 +397,14 @@ if __name__ == "__main__":
     def run_mode():
         wrangler.run()
 
-    def info_mode():
-        wrangler.job_mng.submit_job_from_path("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-CA/wro_6300_metaSim.v001.nk")
+    def debug_mode():
+        job = wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178")
+        mjob = wrangler.get_metajob_from_deadline_job(job)
+        mjob.info["ListedSlaves"] = ",".join(['renderserver-4g_0', 'renderserver-4g_1', 'renderserver-4g_2'])
+        mjob.info["Pool"] = "comp"
+        mjob.info["Grp"] = "nuke"
+        for task in mjob.tasks:
+            task.requeue()
 
     def manual_mode():
         wrangler.manual_mode = True
@@ -372,32 +422,17 @@ if __name__ == "__main__":
         elif len(sys.argv) == 2:
             if sys.argv[1] == "--run":
                 run_mode()
-            elif sys.argv[1] == "--info":
-                info_mode()
+            elif sys.argv[1] == "--debug":
+                debug_mode()
             elif sys.argv[1] == "--manual":
                 manual_mode()
             else:
-                print("Invalid option. Usage: python MetaWrangler.py [--run | --info]")
+                print("Invalid option. Usage: python MetaWrangler.py [--run | --debug | --manual]")
                 sys.exit(1)
         else:
-            print("Invalid option. Usage: python MetaWrangler.py [--run | --info]")
+            print("Invalid option. Usage: python MetaWrangler.py [--run | --debug | --manual]")
             sys.exit(1)
 
-    # wrangler.run()
-
-# task_db = wrangler.get_all_tasks()
-# date_keys = ['Date', 'DateStart', 'DateStart', 'DateComp', 'Start', 'StartRen', 'Comp']
-# percent_keys = ['SnglTskPrg', 'Prog']
-# factorize_keys = ['User', 'Dept', 'Version', 'WriteNode', 'RenderMode', 'Mach', 'Plug', 'JobID']
-# task_df = wrangler.convert_dict_to_df(task_db, date_keys, percent_keys, factorize_keys)
-# del task_db
-
-# worker = "renderserver-4g_0"
-# worker = "renderservermeta-2g_1_0"
-#
-# worker_db = wrangler.get_worker_db(worker)
-# print(worker_db["info"])
-# print(wrangler.is_worker_idle(worker, delta_min=10000))
 
 # WorkerStat 2 -> Idle
 
