@@ -344,7 +344,7 @@ class MetaWrangler():
 
     def handle_client(self, client_socket):
         request = client_socket.recv(1024).decode('utf-8').strip()
-        print(f"Received: {request}")
+        self.logger.debug(f"Received: {request}")
 
         response = "Message received successfully!"
         client_socket.send(response.encode('utf-8'))
@@ -379,7 +379,7 @@ class MetaWrangler():
             except BlockingIOError:
                 pass
 
-            self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
+            # self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
 
             if not self.manual_mode:
                 jobs = self.get_running_jobs()
@@ -424,18 +424,6 @@ if __name__ == "__main__":
     wrangler = MetaWrangler()
 
     def run_mode():
-        git_dir = os.path.join(os.getcwd(), '.git')
-        if os.path.isdir(git_dir):
-            if os.path.isfile(os.path.join(git_dir, 'hooks/post-merge')):
-                pass
-            else:
-                try:
-                    subprocess.run("/home/sadmin/repos/MetaWrangler/setup_git_hooks.sh")
-                except:
-                    pass
-        else:
-            print("Can't find a .git directory in your current working directory. Please only run MetaWrangler via git.")
-            return
         wrangler.run()
 
     def debug_mode():
