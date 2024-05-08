@@ -1,4 +1,6 @@
 import socket
+import threading
+import json
 
 def send_message(message):
     server_ip = '10.175.19.128' ### outbound ip of renderserver
@@ -16,5 +18,18 @@ def send_message(message):
     finally:
         client_socket.close()
 
+def thread_function(message):
+    send_message(message)
+
 if __name__=="__main__":
-    send_message("Hello Debug Session")
+    threads = []
+    num_calls = 1
+    for i in range(num_calls):
+        request = {"Type": "NewJobSubmission", "Payload": "/mnt/x/PROJECTS/houdini/sequences/sh/sh_0070/comp/work/nuke/Comp/sh_0070_debug.v001.nk"}
+        message = json.dumps(request)
+        thread = threading.Thread(target=thread_function, args=[message])
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()

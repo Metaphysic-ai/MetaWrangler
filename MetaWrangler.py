@@ -29,8 +29,8 @@ class MetaJob():
         self.tasks = []
         self.nodes = []
 
-    def submit(self):
-        return wrangler.con.Jobs.SubmitJobs([wrangler.deadline_utility.get_job_plug_info(self.info)])
+    def submit(self, override={}):
+        return wrangler.con.Jobs.SubmitJobs([wrangler.deadline_utility.get_job_plug_info(self.info, override)])
 
 class MetaTask():
     def __init__(self, wrangler):
@@ -346,7 +346,7 @@ class MetaWrangler():
         request = client_socket.recv(1024).decode('utf-8').strip()
         print(f"Received: {request}")
 
-        response = "Message received successfully!"
+        response = f"MetaWrangler received {request['Type']} request successfully!"
         client_socket.send(response.encode('utf-8'))
 
         client_socket.close()
@@ -385,11 +385,6 @@ class MetaWrangler():
             # self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
 
             if not self.manual_mode:
-                jobs = self.get_running_jobs()
-                for job in jobs:
-                    metajob = self.get_metajob_from_deadline_job(job)
-                    metajob.profile = self.get_job_profile(metajob.info["SceneFile"])
-                    # self.task_event_stack.append(metajob)
 
                 if self.con_mng.running_containers:
                     self.con_mng.kill_idle_containers()
@@ -430,7 +425,9 @@ if __name__ == "__main__":
         wrangler.run(sandbox)
 
     def debug_mode():
-        print(wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178"))
+        # metajob = wrangler.get_metajob_from_deadline_job(wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178"))
+        metajob = MetaJob(wrangler)
+        print(metajob.submit(override={"Name": "OverrideTest", "ChunkSize": 11}))
 
     def manual_mode():
         wrangler.manual_mode = True

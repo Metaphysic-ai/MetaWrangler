@@ -23,6 +23,9 @@ class Container:
 
 class ContainerManager:
     def __init__(self, wrangler):
+        self.CPU_LOAD_LIMIT = 70.0
+        self.MEM_LOAD_LIMIT = 70.0
+
         self.wrangler = wrangler
         self.running_containers = []
         self.job_trigger_event = False
@@ -59,7 +62,7 @@ class ContainerManager:
                 return False, None
 
         system_cpu_usage, system_mem_usage = self.get_system_usage()
-        if system_cpu_usage < 70.0 and system_mem_usage < 70.0:
+        if system_cpu_usage < self.CPU_LOAD_LIMIT and system_mem_usage < self.MEM_LOAD_LIMIT:
             print(f"Starting container: {worker_name}")
             subprocess.Popen(
                 self.get_container_command(hostname, container_name, f"{mem}g", cpuset, gpu, gpu_index), stdout=subprocess.DEVNULL, shell=True
