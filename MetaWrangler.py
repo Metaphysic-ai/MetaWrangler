@@ -425,12 +425,14 @@ if __name__ == "__main__":
 
     def run_mode():
         git_dir = os.path.join(os.getcwd(), '.git')
-        print(os.getcwd())
         if os.path.isdir(git_dir):
             if os.path.isfile(os.path.join(git_dir, 'hooks/post-merge')):
                 pass
             else:
-                subprocess.run("setup_git_hooks.sh")
+                try:
+                    subprocess.run("/home/sadmin/repos/MetaWrangler/setup_git_hooks.sh")
+                except:
+                    pass
         else:
             print("Can't find a .git directory in your current working directory. Please only run MetaWrangler via git.")
             return
