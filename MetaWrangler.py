@@ -414,10 +414,21 @@ class MetaWrangler():
 
 if __name__ == "__main__":
     import sys
+    import os
+    import subprocess
 
     wrangler = MetaWrangler()
 
     def run_mode():
+        git_dir = os.path.join(os.getcwd(), '.git')
+        if os.path.isdir(git_dir):
+            if os.path.isfile(os.path.join(git_dir, 'hooks/post-merge')):
+                pass
+            else:
+                subprocess.run("setup_git_hooks.sh")
+        else:
+            print("Can't find a .git directory in your current working directory. Please only run MetaWrangler via git.")
+            return
         wrangler.run()
 
     def debug_mode():
