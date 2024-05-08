@@ -2,7 +2,7 @@ import socket
 
 def send_message(message):
     server_ip = '10.175.19.128' ### outbound ip of renderserver
-    server_port = 12345
+    server_port = 12121
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -15,3 +15,6 @@ def send_message(message):
 
     finally:
         client_socket.close()
+
+if __name__=="__main__":
+    send_message("Hello renderserver")

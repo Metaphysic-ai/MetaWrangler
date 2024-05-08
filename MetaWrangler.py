@@ -396,7 +396,7 @@ class MetaWrangler():
                         self.assign_containers_to_job(self.task_event_history[k]["job"])
 
             # time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
-            print("Service is checking for tasks...")
+            # print("Service is checking for tasks...")
             if self.task_event_stack:
                 metajob = self.task_event_stack[0]
                 task_event = metajob.profile
