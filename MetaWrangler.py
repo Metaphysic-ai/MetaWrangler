@@ -344,7 +344,7 @@ class MetaWrangler():
 
     def handle_client(self, client_socket):
         request = client_socket.recv(1024).decode('utf-8').strip()
-        self.logger.debug(f"Received: {request}")
+        print(f"Received: {request}")
 
         response = "Message received successfully!"
         client_socket.send(response.encode('utf-8'))
