@@ -357,11 +357,12 @@ class MetaWrangler():
         from datetime import datetime
         hostname = socket.gethostname()
         host = '0.0.0.0'
-        port = 12345
+        port = 12121
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(20)
+        server_socket.setblocking(False)
 
         self.logger.debug(f"MetaWrangler Service is listening on {host}:{port}")
 
@@ -371,16 +372,19 @@ class MetaWrangler():
 
 
         while True:
-            client_socket, client_address = server_socket.accept()
-
-            self.handle_client(client_socket)
+            try:
+                client_socket, client_address = server_socket.accept()
+                print(f"Connection from {client_address} has been established!")
+                self.handle_client(client_socket)
+            except BlockingIOError:
+                pass
 
             self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
 
             if not self.manual_mode:
                 jobs = self.get_running_jobs()
                 for job in jobs:
-                    metajob = MetaJob(job)
+                    metajob = self.get_metajob_from_deadline_job(job)
                     metajob.profile = self.get_job_profile(metajob.info["SceneFile"])
                     # self.task_event_stack.append(metajob)
 
@@ -432,13 +436,7 @@ if __name__ == "__main__":
         wrangler.run()
 
     def debug_mode():
-        job = wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178")
-        mjob = wrangler.get_metajob_from_deadline_job(job)
-        mjob.info["ListedSlaves"] = ",".join(['renderserver-4g_0', 'renderserver-4g_1', 'renderserver-4g_2'])
-        mjob.info["Pool"] = "comp"
-        mjob.info["Grp"] = "nuke"
-        for task in mjob.tasks:
-            task.requeue()
+        print(wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178"))
 
     def manual_mode():
         wrangler.manual_mode = True
