@@ -8,6 +8,7 @@ from managers.ContainerManager import ContainerManager
 from managers.JobManager import JobManager
 import logging
 from utils import DeadlineUtility
+import json
 
 class TaskProfile():
     def __init__(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
@@ -345,7 +346,7 @@ class MetaWrangler():
     def handle_client(self, client_socket):
         request = client_socket.recv(1024).decode('utf-8').strip()
         print(f"Received: {request}")
-        request = dict(request)
+        request = json.loads(request)
 
         response = f"MetaWrangler received {request['Type']} request successfully!"
         client_socket.send(response.encode('utf-8'))
