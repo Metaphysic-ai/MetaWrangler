@@ -366,7 +366,8 @@ class MetaWrangler():
         server_socket.listen(20)
         server_socket.setblocking(False)
 
-        print(f"MetaWrangler Service is listening on {host}:{port}")
+        sandbox_flag_str = " | (Sandbox Mode)" if sandbox else ""
+        print(f"MetaWrangler Service is listening on {self.get_local_ip()}:{port}{sandbox_flag_str}")
 
         command = "podman kill $(podman ps -q -f name=meta)"
 
