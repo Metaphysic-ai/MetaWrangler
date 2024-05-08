@@ -342,11 +342,28 @@ class MetaWrangler():
         self.logger.debug("X#X#X#X#DEBUG: Assigning containers: "+str(
             self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.info["_id"], containers_to_assign)))
 
+    def handle_client(self, client_socket):
+        request = client_socket.recv(1024).decode('utf-8').strip()
+        print(f"Received: {request}")
+
+        response = "Message received successfully!"
+        client_socket.send(response.encode('utf-8'))
+
+        client_socket.close()
+
     def run(self):
         import socket
         import subprocess
         from datetime import datetime
         hostname = socket.gethostname()
+        host = '0.0.0.0'
+        port = 12345
+
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((host, port))
+        server_socket.listen(20)
+
+        self.logger.debug(f"MetaWrangler Service is listening on {host}:{port}")
 
         command = "podman kill $(podman ps -q -f name=meta)"
 
@@ -354,7 +371,10 @@ class MetaWrangler():
 
 
         while True:
-            # print(self.get_running_jobs())  # Execute your periodic task
+            client_socket, client_address = server_socket.accept()
+
+            self.handle_client(client_socket)
+
             self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
 
             if not self.manual_mode:
@@ -362,7 +382,7 @@ class MetaWrangler():
                 for job in jobs:
                     metajob = MetaJob(job)
                     metajob.profile = self.get_job_profile(metajob.info["SceneFile"])
-                    self.task_event_stack.append(metajob)
+                    # self.task_event_stack.append(metajob)
 
                 if self.con_mng.running_containers:
                     self.con_mng.kill_idle_containers()
@@ -371,7 +391,7 @@ class MetaWrangler():
                     for k in self.task_event_history.keys():
                         self.assign_containers_to_job(self.task_event_history[k]["job"])
 
-            time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
+            # time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
             print("Service is checking for tasks...")
             if self.task_event_stack:
                 metajob = self.task_event_stack[0]
