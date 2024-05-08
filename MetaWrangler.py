@@ -351,20 +351,22 @@ class MetaWrangler():
 
         client_socket.close()
 
-    def run(self):
+    def run(self, sandbox=False):
         import socket
         import subprocess
         from datetime import datetime
+        print("Starting MetaWrangler Service...")
+
         hostname = socket.gethostname()
         host = '0.0.0.0'
-        port = 12121
+        port = 12121 if not sandbox else 12120 ### Set to different port to stop live submits to enter MetaWrangler
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
         server_socket.listen(20)
         server_socket.setblocking(False)
 
-        self.logger.debug(f"MetaWrangler Service is listening on {host}:{port}")
+        print(f"MetaWrangler Service is listening on {host}:{port}")
 
         command = "podman kill $(podman ps -q -f name=meta)"
 
@@ -423,8 +425,8 @@ if __name__ == "__main__":
 
     wrangler = MetaWrangler()
 
-    def run_mode():
-        wrangler.run()
+    def run_mode(sandbox=False):
+        wrangler.run(sandbox)
 
     def debug_mode():
         print(wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178"))
@@ -439,22 +441,23 @@ if __name__ == "__main__":
             wrangler.task_event_stack.append(metajob)
         wrangler.run()
 
-    if __name__ == "__main__":
-        if len(sys.argv) == 1:
+    if len(sys.argv) == 1:
+        run_mode()
+    elif len(sys.argv) == 2:
+        if sys.argv[1] == "--run":
             run_mode()
-        elif len(sys.argv) == 2:
-            if sys.argv[1] == "--run":
-                run_mode()
-            elif sys.argv[1] == "--debug":
-                debug_mode()
-            elif sys.argv[1] == "--manual":
-                manual_mode()
-            else:
-                print("Invalid option. Usage: python MetaWrangler.py [--run | --debug | --manual]")
-                sys.exit(1)
+        elif sys.argv[1] == "--run_sandbox":
+            run_mode(sandbox=True)
+        elif sys.argv[1] == "--debug":
+            debug_mode()
+        elif sys.argv[1] == "--manual":
+            manual_mode()
         else:
-            print("Invalid option. Usage: python MetaWrangler.py [--run | --debug | --manual]")
+            print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug |--manual ]")
             sys.exit(1)
+    else:
+        print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug |--manual ]")
+        sys.exit(1)
 
 
 # WorkerStat 2 -> Idle

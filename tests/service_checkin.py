@@ -17,4 +17,4 @@ def send_message(message):
         client_socket.close()
 
 if __name__=="__main__":
-    send_message("Hello Renderserver")
+    send_message("Hello Debug Session")
