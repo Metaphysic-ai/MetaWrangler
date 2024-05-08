@@ -4,7 +4,7 @@ import json
 
 def send_message(message):
     server_ip = '10.175.19.128' ### outbound ip of renderserver
-    server_port = 12120
+    server_port = 12121
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -25,7 +25,7 @@ if __name__=="__main__":
     threads = []
     num_calls = 1
     for i in range(num_calls):
-        request = {"Type": "NewJobSubmission", "Payload": "/mnt/x/PROJECTS/houdini/sequences/sh/sh_0070/comp/work/nuke/Comp/sh_0070_debug.v001.nk"}
+        request = {"Type": "PreCalc", "Payload": "/mnt/x/PROJECTS/houdini/sequences/sh/sh_0070/comp/work/nuke/Comp/sh_0070_debug.v001.nk"}
         message = json.dumps(request)
         thread = threading.Thread(target=thread_function, args=[message])
         threads.append(thread)
