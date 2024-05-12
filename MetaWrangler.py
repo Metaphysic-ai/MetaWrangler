@@ -444,8 +444,9 @@ class MetaWrangler():
         ### TODO: Once there is a slackbot, notify a TD about this issue.
         pass
 
-    def precalc_script(self, script_path):
+    def precalc_script(self, payload):
         ### TODO: Call ocean database to calculate and add new path to be ready for later
+        print(payload)
         pass
 
     def manage_containers(self, hostname):
