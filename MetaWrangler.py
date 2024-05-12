@@ -545,7 +545,7 @@ class MetaWrangler():
 
             tick_times.append(time.time() - loop_start) ### Do an average over how long we take per loop
             if len(tick_times) > 100:
-                print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
+                # print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
                 tick_times = []
 
 
