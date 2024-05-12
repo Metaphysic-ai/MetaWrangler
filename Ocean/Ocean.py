@@ -1,33 +1,158 @@
 from graphlib import TopologicalSorter
 import re
+import socket
+import json
+from datetime import datetime
+
+class OceanDatabase:
+    ### Fancy name for the database.
+    def __init__(self):
+        self.SUPPORTED_REQUEST_TYPES = [
+            "GetProfile"
+        ]
+    def get_profile_args(self, script, write_node):
+        args = {
+                "id": 0,
+                "info": {"estimated_success_rate": 1.0},
+                "mem": 4,
+                "cpus": 2,
+                "gpu": False,
+                "batch_size": 10,
+                "min_time": 0,
+                "max_time": 10,
+                "pcomp_flag": False,
+                "creation_time": str(datetime.now().strftime('%y%m%d_%H%M%S'))
+                }
+        return args
+
+    def get_local_ip(self):
+        try:
+            # Create a dummy socket and connect to a well-known address (Google DNS)
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+        except Exception:
+            ip = "Could not determine local IP"
+        return ip
+
+    def handle_client(self, client_socket):
+        ### Currently, the supported request types are:
+        ### GetProfile
+        request = client_socket.recv(1024).decode('utf-8').strip()
+        print(f"Received: {request}")
+        response = f"{request['Type']} is not implemented yet."
+        request = json.loads(request)
+        if not request['Type'] in self.SUPPORTED_REQUEST_TYPES:
+            response = f"A request of the type {request['Type']} is not supported."
+
+        if request.get("Type") == "GetProfile":
+            ### When a user opens a nuke script, we precalculate the profile (and spin up a worker?) if there is room.
+            script_path = request["Payload"]["script_path"]
+            write_node = request["Payload"]["write_node"]
+            args = self.get_profile_args(script_path, write_node)
+            response = json.dumps(args)
+
+        client_socket.send(response.encode('utf-8'))
+        client_socket.close()
+
+    def run(self):
+        import socket
+        import subprocess
+        import time
+        from datetime import datetime
+        print("Starting Ocean Database...")
+
+        hostname = socket.gethostname()
+        host = '0.0.0.0'
+        port = 12123
+
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.bind((host, port))
+        server_socket.listen(20)
+        server_socket.setblocking(False)
+
+        print(f"Ocean Database is listening on {self.get_local_ip()}:{port}")
+
+        tick_times = []
+        while True:
+            loop_start = time.time() ### DEBUG: Analyse main loop performance, should probably stay <1-2s
+
+            try:
+                client_socket, client_address = server_socket.accept()
+                print(f"Connection from {client_address} has been established!")
+                self.handle_client(client_socket)
+            except BlockingIOError:
+                pass
+
+            tick_times.append(time.time() - loop_start)  ### Do an average over how long we take per loop
+            if len(tick_times) > 100:
+                print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
+                tick_times = []
 
 class Node:
-    def __init__(self, name, type, knobs, num_inputs):
+    def __init__(self, name="", type="", knobs=[], num_inputs=None):
         self.name = name
         self.type = type
         self.knobs = knobs
-        self.num_inputs = num_inputs
+        self.body = ""
+        self.inputs = num_inputs
         self.root_node = None
         self.out_nodes = []
         self.in_nodes = []
     def __repr__(self):
         return f'Node(\'{self.type}\', {self.name})'
 
-class NukeScript:
-    def __init__(self):
-        self.nodeGraph = Graph()
-
 class Graph:
-    def __init__(self, script):
+    def __init__(self, script, ignore_backdrops=True, ignore_dots=True):
         self.is_constructing = True
         self.graph_dict = {}
         self.script = script
         self.stack = []
-        self.simplifiedDAG = []
-        self.nodes = self.fill_graph_from_script()
+        self.simplifiedDAG = {}
+        self.nodes = []
+        self.fill_graph_from_script_simplified(ignore_backdrops, ignore_dots)
+        self.fill_DAG()
 
+    def get_profile_for_script(self, script, write_node):
+        ### TODO: smartify the thing
+        return None
 
-    def fill_graph_from_script(self):
+    def fill_DAG(self):
+        for node in self.nodes:
+            if node.type not in self.simplifiedDAG.keys():
+                self.simplifiedDAG[node.type] = 1
+            else:
+                self.simplifiedDAG[node.type] += 1
+    def fill_graph_from_script_simplified(self, ignore_backdrops=True, ignore_dots=True):
+        start_parse = False
+        bracket_stack = 0
+        why = False
+        # "Root {"
+        with open(self.script, "r") as f:
+            node = Node()
+            for n, line in enumerate(f.readlines()):
+                if "Root {" in line:
+                    start_parse = True
+                elif not start_parse:
+                    continue
+                if start_parse:
+                    if " {" in line and bracket_stack == 0:
+                        node.type = line.split(" ")[0]
+                    if line.strip().startswith("inputs"):
+                        node.inputs = line.split(" ")[-1]
+                    if line.strip().startswith("name"):
+                        node.name = line.split(" ")[-1].strip()
+                    node.body += line.strip()+"\n"
+                    bracket_stack += line.count("{")
+                    bracket_stack -= line.count("}")
+                    if bracket_stack == 0:
+                        if not (ignore_backdrops and "backdrop" in node.type.lower()):
+                            if not (ignore_dots and "dot" in node.type.lower()):
+                                if node.name != "" and node.type != "":
+                                    self.nodes.append(node)
+                        node = Node()
+
+    def fill_graph_from_script(self, ignore_backdrops=True):
         # "/mnt/x/PROJECTS/romulus/sequences/and/and_2000/comp/work/nuke/debug/and_2000_metawranglerTest.v002.nk"
         graph = {}  # {node_id: }
         node_id = 0
@@ -101,6 +226,9 @@ class Graph:
                 stack_instructions.append({node_raw.split(" ")[0]: node_raw.split(" ")[1]})
                 continue
             node = parse_raw_text(node_raw)
+            print(node.type, "BackDrop" in node.type)
+            if ignore_backdrops and "Backdrop" in node.type:
+                continue
             stack_instructions.append({"place_node": node})
         self.construct_dag(stack_instructions, simplified=True)
 
@@ -190,3 +318,9 @@ class Graph:
 
 # graph = Graph("/mnt/x/PROJECTS/romulus/sequences/and/and_2000/comp/work/nuke/debug/and_2000_metawranglerTest.v011.nk")
 # graph = Graph("/mnt/x/PROJECTS/romulus/sequences/wro/wro_6300/comp/work/nuke/Comp-WIP/wro_6300_debugDaniel.v001.nk")
+# graph = Graph("/mnt/x/PROJECTS/romulus/sequences/wro/wro_1860/comp/work/nuke/Comp-WIP/wro_1860_test.v003.nk")
+#
+# for node in graph.simplifiedDAG:
+#     if "Group" in node.type:
+#         print(node)
+# print(len(graph.simplifiedDAG))

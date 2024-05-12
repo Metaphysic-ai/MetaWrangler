@@ -9,35 +9,49 @@ from managers.JobManager import JobManager
 import logging
 from utils import DeadlineUtility
 import json
+import socket
 
 class TaskProfile():
-    def __init__(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
+    def __init__(self, id, info, mem, cpus, gpu, creation_time, batch_size, min_time, max_time, pcomp_flag=False):
+        self.info = info ###
         self.id = id
         self.required_mem = mem
         self.required_cpus = cpus
         self.required_gpu = gpu
         self.creation_time = creation_time
         self.batch_size = batch_size
-        self.timeout = timeout
+        self.min_time = min_time
+        self.max_time = max_time
+        self.pcomp_flag = pcomp_flag
+
+    def mutate(self):
+        ### TODO: Incrementally change the profile to adapt over time and find the right one for the job if the initial guess wasn't good enough.
+        pass
+
+class MetaWrite():
+    def __init__(self, metajob, in_nodes=[], profile=None):
+        self.metajob = metajob
+        self.info = {}
+        self.in_nodes = in_nodes
+        self.profile = profile
+        self.history = []
+        self.holdover_frames = []
+        self.active = False
+        self.tasks = []
+        self.assigned_workers = []
+    def submit(self, override={}):
+        return wrangler.con.Jobs.SubmitJobs([wrangler.deadline_utility.get_job_plug_info(self.info, override)])
 
 class MetaJob():
     def __init__(self, wrangler):
         self.wrangler = wrangler
-        self.info = {}
-        self.profile = None
-        self.assigned_workers = []
-        self.history = []
-        self.tasks = []
         self.nodes = []
-
-    def submit(self, override={}):
-        return wrangler.con.Jobs.SubmitJobs([wrangler.deadline_utility.get_job_plug_info(self.info, override)])
+        self.active_write_nodes = []
 
 class MetaTask():
     def __init__(self, wrangler):
         self.wrangler = wrangler
         self.info = {} # 'JobId', 'TaskId', etc.
-        self.profile = None
         self.assigned_workers = []
         self.history = []
 
@@ -46,9 +60,13 @@ class MetaTask():
 
 class MetaWrangler():
     def __init__(self):
+        self.SUPPORTED_REQUEST_TYPES = [
+            "PreCalc",
+            "NewJobSubmission"
+        ]
         self.con = Connect(self.get_local_ip(), 8081)
         self.task_event_stack = []
-        self.task_event_history = {}
+        self.active_jobs = []
 
         logging.basicConfig(filename='/mnt/x/temp/4renderserver/MetaWrangler3.logs',
                             format='%(asctime)s %(message)s',
@@ -59,9 +77,9 @@ class MetaWrangler():
         self.job_mng = JobManager(self)
         self.manual_mode = False
         self.deadline_utility = DeadlineUtility(self.con)
+        self.NUM_ATTEMPTS_TO_TRY = 5
 
     def get_local_ip(self):
-        import socket
         try:
             # Create a dummy socket and connect to a well-known address (Google DNS)
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
@@ -155,17 +173,17 @@ class MetaWrangler():
         seconds_difference = time_difference.total_seconds()
         minutes_difference = seconds_difference / 60
 
-        worker_db = wrangler.get_worker_db(worker.name)
+        worker_report = wrangler.get_worker_report(worker.name)
         last_render_time_str = None
         self.logger.debug(str(worker.name))
-        self.logger.debug(worker_db)
+        self.logger.debug(worker_report)
         self.logger.debug(f"######## MINUTES DIFFERENCE: {minutes_difference} with delta {delta_min}")
         if minutes_difference < delta_min:
             return False
 
-        if worker_db["info"]:
-            if len(worker_db["info"]):
-                last_render_time_str = worker_db["info"]["StatDate"]
+        if worker_report["info"]:
+            if len(worker_report["info"]):
+                last_render_time_str = worker_report["info"]["StatDate"]
 
         if last_render_time_str is None:
             return False
@@ -288,15 +306,16 @@ class MetaWrangler():
 
     def get_metajob_from_deadline_job(self, deadline_job):
         metajob = MetaJob(self)
-        metajob.profile = self.get_job_profile(deadline_job["Props"]["PlugInfo"]["SceneFile"])
+        metawrite = MetaWrite(metajob)
+        metawrite.profile = self.get_job_profile(deadline_job["Props"]["PlugInfo"]["SceneFile"])
+        metajob.active_write_nodes.append(metawrite)
         for task_info in self.con.Tasks.GetJobTasks(deadline_job["_id"])["Tasks"]:
             metatask = MetaTask(self)
             metatask.info = self.deadline_utility.get_less_stupid_dictionary_keys(task_info)
-            metatask.profile = metajob.profile ### For now, deadline doesn't allow more granular than job level.
-            metajob.tasks.append(metatask)
+            metawrite.tasks.append(metatask)
 
         job_info = self.flatten_dict(self.con.Jobs.GetJob(deadline_job["_id"]))
-        metajob.info = self.deadline_utility.get_less_stupid_dictionary_keys(job_info)
+        metawrite.info = self.deadline_utility.get_less_stupid_dictionary_keys(job_info)
         return metajob
 
     def get_all_tasks(self):
@@ -313,7 +332,7 @@ class MetaWrangler():
             # print(combined_dict)
         return task_db
 
-    def get_worker_db(self, worker_name):
+    def get_worker_report(self, worker_name):
         info = self.con.Slaves.GetSlaveInfo(worker_name)
         history = self.con.Slaves.GetSlaveHistoryEntries(worker_name)
         reports = self.con.Slaves.GetSlaveReports(worker_name)
@@ -322,46 +341,162 @@ class MetaWrangler():
     def get_task(self, jid, tid):
         return self.con.Tasks.GetJobTask(jid, tid)
 
-    def create_task_event(self, id, mem, cpus, gpu, creation_time, batch_size, timeout):
-        task_event = TaskProfile(id, mem, cpus, gpu, creation_time, batch_size, timeout)
-        self.task_event_stack.append(task_event)
+    def get_job_profile(self, script_path, node):
+        server_ip = '10.175.19.128'  # outbound IP of renderserver
+        server_port = 12123
 
-    def get_job_profile(self, job):
-        ### TODO: PLACEHOLDER
-        profile = TaskProfile(id=0, mem=4, cpus=2, gpu=False,
-        batch_size=10, timeout=10, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')))
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        args = {}
+
+        try:
+            request = {"Type": "GetProfile", "Payload": {"script_path": script_path, "write_node": node}}
+            message = json.dumps(request)
+            client_socket.connect((server_ip, server_port))
+            client_socket.sendall(message.encode('utf-8'))
+            print("Sending script path and write not to get target profile.")
+
+            response = client_socket.recv(1024).decode('utf-8')
+            args = json.loads(response)
+
+        except socket.error as e:
+            print(f"Socket error occurred: {e}")
+
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
+        finally:
+            client_socket.close()
+
+        profile = TaskProfile(**args)
         return profile
 
     def assign_containers_to_job(self, metajob):
-        containers_to_assign = []
-        for container in self.con_mng.running_containers:
-            if metajob.profile.required_mem == container.mem \
-                    and metajob.profile.required_cpus == container.cpus \
-                    and metajob.profile.required_gpu == container.gpu:
-                containers_to_assign.append(container.name)
+        ### TODO: This is the legacy version, actually make it do the thing.
+        pass
+        # containers_to_assign = []
+        # for container in self.con_mng.running_containers:
+        #     if metajob.profile.required_mem == container.mem \
+        #             and metajob.profile.required_cpus == container.cpus \
+        #             and metajob.profile.required_gpu == container.gpu:
+        #         containers_to_assign.append(container.name)
+        #
+        # self.logger.debug("X#X#X#X#DEBUG: Assigning containers: "+str(
+        #     self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.info["_id"], containers_to_assign)))
 
-        self.logger.debug("X#X#X#X#DEBUG: Assigning containers: "+str(
-            self.con.Jobs.AddSlavesToJobMachineLimitList(metajob.info["_id"], containers_to_assign)))
+    def initialize_metajob(self, script_path, write_nodes):
+        ### TODO: Initialize with profiler instead.
+        metajob = MetaJob(self)
+        for node in write_nodes:
+            metawrite = MetaWrite(metajob)
+            metawrite.profile = self.get_job_profile(script_path, node)
+            metajob.active_write_nodes.append(metawrite)
+        self.create_backup(script_path)
+        for write_node in metajob.active_write_nodes:
+            if write_node.profile.pcomp_flag:
+                self.auto_pcomp(metajob,
+                                write_node)  ### Apply automatic pcomps to script if profiler flags it to do so.
+            write_node.submit()
+            if not write_node.active:  ### If not already active, set to active and add to active job list.
+                self.active_jobs.append(write_node)
+                write_node.active = True
+
+    def create_backup(self, nuke_script):
+        ### TODO: create a backup of this nuke_script
+        pass
+
+    def auto_pcomp(self, metajob, write_node):
+        ### TODO: Add pcomp nodes, add Write nodes to metajob.active_write_nodes, set to StrictRenderSequence, save script as reference.
+        ### - Check BBOX on blurs and transforms
+        ### - Concatenate successive Transforms into one.
+        ### - Suggest pcomp/auto-update if something changed.
+        pass
+
+    def wrangler_heuristics(self):
+        ### TODO: Apply heuristics to each task (Requeue on timeout,  etc.)
+        pass
+
+    def check_jobs_status(self):
+        ### TODO: Check all active jobs for their status
+        finished_jobs = []
+        failed_jobs = []
+        return finished_jobs, failed_jobs
+
+    def run_output_check(self, job):
+        ### TODO: do quick sanity check of the outputs (are all frames present in the outdir, maybe random sampling if frames are black.)
+        ### TODO: Mark as failed and throw back to active jobs if it didn't pass.
+        passed = True
+        return passed
+
+    def add_to_next_db_update(self, job, success):
+        ### TODO: Add the successful jobs to the vector database of successful profiles to do similarity checks on.
+        ### TODO: Also add them to the perpetual db (Throw them into the Ocean, my dude.).
+        pass
+
+    def failure_analysis(self, job):
+        ### TODO: Do a more in-depth analysis of the failed job to try and find what might have been going on.
+        ### (This most likely has to move out of the main run() loop due to performance and instead update every X ticks.)
+        ### e.g. do a script diff with a lighthouse profile
+        analysis = {}
+        return analysis
+
+    def send_full_failure_notification(self, job, analysis):
+        ### TODO: Once there is a slackbot, notify a TD about this issue.
+        pass
+
+    def precalc_script(self, script_path):
+        ### TODO: Call ocean database to calculate and add new path to be ready for later
+        pass
+
+    def manage_containers(self, hostname):
+        ### 1. apply gaussian distribution based on prio.
+        ### 2. Spawn containers big to small until no more fit.
+        ### 3. Assign all active jobs all workers that fit their profile.
+        for metajob in self.active_jobs:
+            for write_node in metajob.active_write_nodes:
+                task_event = write_node.profile ### Make sure render order is enforced
+                result = self.con_mng.spawn_container(hostname=hostname,
+                                                      mem=task_event.required_mem,
+                                                      id=task_event.id,
+                                                      cpus=task_event.required_cpus,
+                                                      gpu=task_event.required_gpu,
+                                                      creation_time=task_event.creation_time)
+                if result:
+                    print("Job triggered!")
+                    write_node.history.append(write_node.profile) ### Add current profile to history.
 
     def handle_client(self, client_socket):
+        ### Currently, the supported request types are:
+        ### PreCalc, NewJobSubmission
         request = client_socket.recv(1024).decode('utf-8').strip()
         print(f"Received: {request}")
         request = json.loads(request)
+        if request['Type'] in self.SUPPORTED_REQUEST_TYPES:
+            response = f"MetaWrangler received {request['Type']} request successfully!"
+        else:
+            response = f"A request of the type {request['Type']} is not supported."
 
-        response = f"MetaWrangler received {request['Type']} request successfully!"
         client_socket.send(response.encode('utf-8'))
-
         client_socket.close()
 
+        if request.get("Type") == "PreCalc":
+            ### When a user opens a nuke script, we precalculate the profile (and spin up a worker?) if there is room.
+            self.precalc_script(request["Payload"])
+
+        if request.get("Type") == "NewJobSubmission":
+            submitted_nuke_script, write_nodes = request["Payload"]
+            self.initialize_metajob(submitted_nuke_script, write_nodes)
+
+        return request
+
     def run(self, sandbox=False):
-        import socket
         import subprocess
         from datetime import datetime
         print("Starting MetaWrangler Service...")
 
         hostname = socket.gethostname()
         host = '0.0.0.0'
-        port = 12121 if not sandbox else 12120 ### Set to different port to stop live submits to enter MetaWrangler
+        port = 12121 if not sandbox else 12120 ### Set to different port to stop live submits to enter MetaWrangler when debugging
 
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((host, port))
@@ -375,8 +510,13 @@ class MetaWrangler():
 
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
 
-
+        tick_times = []
         while True:
+            loop_start = time.time() ### DEBUG: Analyse main loop performance, should probably stay <1-2s
+            ### Clean up old, idle workers
+            if self.con_mng.running_containers:
+                self.con_mng.kill_idle_containers()
+
             try:
                 client_socket, client_address = server_socket.accept()
                 print(f"Connection from {client_address} has been established!")
@@ -384,36 +524,29 @@ class MetaWrangler():
             except BlockingIOError:
                 pass
 
-            # self.logger.debug(f"Numbers of tasks in stack:{len(self.task_event_stack)}")
+            finished_jobs, failed_jobs = self.check_jobs_status()
+            for finished_job in finished_jobs:
+                passed = self.run_output_check(finished_job)
+                if passed:
+                    self.add_to_next_db_update(finished_job, success=True)
+                    self.active_jobs.remove(finished_job)
 
-            if not self.manual_mode:
+            for failed_job in failed_jobs:
+                if len(failed_job.history) > self.NUM_ATTEMPTS_TO_TRY: ### Stop incrementing on the profile after X attempts.
+                    analysis = self.failure_analysis(failed_job)
+                    self.send_full_failure_notification(failed_job, analysis)
+                    self.add_to_next_db_update(failed_job, success=False)
+                    self.active_jobs.remove(failed_job)
+                failed_job.profile.mutate() ### Try to get closer to correct profile if initial one failed.
 
-                if self.con_mng.running_containers:
-                    self.con_mng.kill_idle_containers()
+            self.manage_containers(hostname)
 
-                if self.task_event_history:
-                    for k in self.task_event_history.keys():
-                        self.assign_containers_to_job(self.task_event_history[k]["job"])
+            self.wrangler_heuristics()
 
-            # time.sleep(3)  # Wait for 10 seconds before the next execution and for kill move to finish
-            # print("Service is checking for tasks...")
-            if self.task_event_stack:
-                metajob = self.task_event_stack[0]
-                task_event = metajob.profile
-                result = self.con_mng.spawn_container(hostname=hostname,
-                                            mem=task_event.required_mem,
-                                            id=task_event.id,
-                                            cpus=task_event.required_cpus,
-                                            gpu=task_event.required_gpu,
-                                            creation_time=task_event.creation_time)
-
-                self.logger.debug(f"RESULT OF SPAWNCONTAINER: {result}")
-                if result:
-                    print("Job triggered!")
-                    self.task_event_history[str(task_event.id)] = {"profile": task_event, "job":metajob}
-                    self.task_event_stack.pop(0)
-                else:
-                    self.task_event_stack.append(self.task_event_stack.pop(0)) ### put task to the end of the stack in case one gets stuck
+            tick_times.append(time.time() - loop_start) ### Do an average over how long we take per loop
+            if len(tick_times) > 100:
+                print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
+                tick_times = []
 
 
 if __name__ == "__main__":
@@ -427,19 +560,11 @@ if __name__ == "__main__":
         wrangler.run(sandbox)
 
     def debug_mode():
+        ### This is where I manually check functions
         # metajob = wrangler.get_metajob_from_deadline_job(wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178"))
-        metajob = MetaJob(wrangler)
-        print(metajob.submit(override={"Name": "OverrideTest", "ChunkSize": 11}))
-
-    def manual_mode():
-        wrangler.manual_mode = True
-        for n in range(5):
-            gpu = True if n < 3 else False
-            metajob = MetaJob({})
-            profile = TaskProfile(id=n, mem=32, cpus=16, gpu=gpu, creation_time=str(datetime.now().strftime('%y%m%d_%H%M%S')), batch_size=10, timeout=10)
-            metajob.profile = profile
-            wrangler.task_event_stack.append(metajob)
-        wrangler.run()
+        # metajob = MetaJob(wrangler)
+        # print(metajob.submit(override={"Name": "OverrideTest", "ChunkSize": 11}))
+        print(wrangler.get_worker_report("renderserver-4g_0")["info"])
 
     if len(sys.argv) == 1:
         run_mode()
@@ -450,13 +575,11 @@ if __name__ == "__main__":
             run_mode(sandbox=True)
         elif sys.argv[1] == "--debug":
             debug_mode()
-        elif sys.argv[1] == "--manual":
-            manual_mode()
         else:
-            print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug |--manual ]")
+            print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug ]")
             sys.exit(1)
     else:
-        print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug |--manual ]")
+        print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug ]")
         sys.exit(1)
 
 
