@@ -4,35 +4,6 @@ import os
 import socket
 import json
 
-sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke/python")
-sys.path.insert(0, "/mnt/x/PROJECTS/software/shotgrid/tk-core/python")
-sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke")
-
-dl_root =  "/opt/Thinkbox/Deadline10/bin"
-os.environ['DEADLINE_PATH'] = dl_root
-os.environ['PROJECT_ROOT'] = "mnt/x/PROJECTS"
-
-# pipeline_root = '/'.join(nuke_env.split('/')[:-1]) + '/'
-root = f"{os.getenv('PROJECT_ROOT')}"
-os.environ['PIPELINE_ROOT'] = root
-
-##Pluggin path##
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/gizmos' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/python' )
-# nuke.pluginAddPath( './Python' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/plugins' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/plugins/animatedSnap3D' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/gizmos/backdrops' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/fonts' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/icons' )
-sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/callbacks' )
-
-print(sys.path)
-
-import sgtk
-from callbacks import backup_manager
-import Deadline_sgConvertToWrite
-Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
 ### Attempt to connect to MetaWrangler. Skip if connection fails.
 
 server_ip = '10.175.19.128'  # outbound IP of renderserver
@@ -43,6 +14,8 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 payload_dict = {nuke.root().name(): {}}
 write_nodes = []
 for node in nuke.allNodes("Write", recurseGroups=True):
+    write_nodes.append(node)
+for node in nuke.allNodes("WriteTank", recurseGroups=True):
     write_nodes.append(node)
 
 def get_dependencies(node, write_nodes):
@@ -61,7 +34,7 @@ def get_dependencies(node, write_nodes):
                 if node_class not in ['Dot', 'BackdropNode']:
                     nodes.add((node_class, node_name))
 
-            if node_class not in ['Write'] or current_node == node:
+            if node_class not in ['Write', 'WriteTank'] or current_node == node:
                 for dep in current_node.dependencies():
                     if dep not in seen:
                         stack.append(dep)
