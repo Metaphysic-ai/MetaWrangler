@@ -6,6 +6,9 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 from managers.ContainerManager import ContainerManager
 from managers.JobManager import JobManager
+from managers.NukeManager import NukeManager
+from Ocean.OceanDatabase import OceanDatabase
+from Ocean.embedder import VectorStoreUtils
 import logging
 from utils import DeadlineUtility
 import json
@@ -61,7 +64,6 @@ class MetaTask():
 class MetaWrangler():
     def __init__(self):
         self.SUPPORTED_REQUEST_TYPES = [
-            "PreCalc",
             "NewJobSubmission",
             "HandShake"
         ]
@@ -468,8 +470,6 @@ class MetaWrangler():
                     write_node.history.append(write_node.profile) ### Add current profile to history.
 
     def handle_client(self, client_socket):
-        ### Currently, the supported request types are:
-        ### PreCalc, NewJobSubmission
         request = client_socket.recv(1024).decode('utf-8').strip()
         print(f"Received: {request}")
         request = json.loads(request)
@@ -482,12 +482,29 @@ class MetaWrangler():
         client_socket.close()
 
         if request.get("Type") == "HandShake":
-            print(request['Payload'])
+            server_ip = '10.175.19.128'  # outbound IP of renderserver
+            server_port = 12123
 
-        if request.get("Type") == "PreCalc":
-            ### When a user opens a nuke script, we precalculate the profile (and spin up a worker?) if there is room.
-            print(request["Payload"])
-            # self.precalc_script(request["Payload"])
+            ocean_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            try:
+                ocean_request = {"Type": "PreCalc", "Payload": request['Payload']} # Sends request to DB for PreCalc
+                message = json.dumps(ocean_request)
+                ocean_socket.connect((server_ip, server_port))
+                ocean_socket.sendall(message.encode('utf-8'))
+                print("Sending script sample to DB to prepare for submission.")
+
+                response = ocean_socket.recv(1024).decode('utf-8')
+                print("Response:", response)
+
+            except socket.error as e:
+                print(f"Socket error occurred: {e}")
+
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+
+            finally:
+                ocean_socket.close()
 
         if request.get("Type") == "NewJobSubmission":
             submitted_nuke_script, write_nodes = request["Payload"]
@@ -508,9 +525,6 @@ class MetaWrangler():
         server_socket.bind((host, port))
         server_socket.listen(20)
         server_socket.setblocking(False)
-
-        os.environ["METAWRANGLER_PATH"] = "/home/sadmin/repos/MetaWrangler"
-        os.environ["METAWRANGLER_CALLBACKS"] = "/home/sadmin/repos/MetaWrangler/callbacks/nuke"
 
         sandbox_flag_str = " | (Sandbox Mode)" if sandbox else ""
         print(f"MetaWrangler Service is listening on {self.get_local_ip()}:{port}{sandbox_flag_str}")
@@ -563,17 +577,23 @@ if __name__ == "__main__":
     import os
     import subprocess
 
+    start_time = time.time()
     wrangler = MetaWrangler()
+    vector_utils = VectorStoreUtils()
+    ocean = OceanDatabase(wrangler, vector_utils)
+    print("Starting the service took:", time.time()-start_time)
 
     def run_mode(sandbox=False):
+        ocean.run()
         wrangler.run(sandbox)
 
     def debug_mode():
         ### This is where I manually check functions
-        # metajob = wrangler.get_metajob_from_deadline_job(wrangler.con.Jobs.GetJob("6639a543ee72d7dfc75d8178"))
-        # metajob = MetaJob(wrangler)
-        # print(metajob.submit(override={"Name": "OverrideTest", "ChunkSize": 11}))
-        print(wrangler.get_worker_report("renderserver-4g_0")["info"])
+        start_time = time.time()
+        nuke_mng = NukeManager("/mnt/x/PROJECTS/pipeline/sequences/ABC/ABC_0000/comp/work/nuke/MetaWranglerUnitTest/ABC_0000_RawPredTransform224.v004.nk")
+        out = nuke_mng.get_write_dependencies()
+        ocean.add_to_database(out)
+        print("Parsing this script took:", time.time()-start_time)
 
     if len(sys.argv) == 1:
         run_mode()

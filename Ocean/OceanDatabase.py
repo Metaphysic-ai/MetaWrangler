@@ -1,16 +1,26 @@
 from graphlib import TopologicalSorter
+from managers.NukeManager import NukeManager
 import re
 import socket
 import json
 from datetime import datetime
+import time
+import subprocess
 
 class OceanDatabase:
     ### Fancy name for the database.
-    def __init__(self):
+    def __init__(self, wrangler, vector_utils):
         self.SUPPORTED_REQUEST_TYPES = [
+            "PreCalc",
             "GetProfile"
         ]
-    def get_profile_args(self, script, write_node):
+        self.wrangler = wrangler
+        self.vector_utils = vector_utils
+
+    def add_to_database(self, script_dependency_dict):
+        self.vector_utils.parse_dependency_dict(script_dependency_dict)
+
+    def get_profile_args(self, script, write_nodes):
         args = {
                 "id": 0,
                 "info": {"estimated_success_rate": 1.0},
@@ -36,8 +46,6 @@ class OceanDatabase:
         return ip
 
     def handle_client(self, client_socket):
-        ### Currently, the supported request types are:
-        ### GetProfile
         request = client_socket.recv(1024).decode('utf-8').strip()
         print(f"Received: {request}")
         response = f"{request['Type']} is not implemented yet."
@@ -45,8 +53,13 @@ class OceanDatabase:
         if not request['Type'] in self.SUPPORTED_REQUEST_TYPES:
             response = f"A request of the type {request['Type']} is not supported."
 
+        if request.get("Type") == "PreCalc":
+            ### When a user opens a nuke script, we precalculate the profile to be ready at submission time.
+            nuke_mng = NukeManager(request["Payload"])
+            write_node_dependencies = nuke_mng.get_write_dependencies()
+            self.add_to_database(write_node_dependencies)
+
         if request.get("Type") == "GetProfile":
-            ### When a user opens a nuke script, we precalculate the profile (and spin up a worker?) if there is room.
             script_path = request["Payload"]["script_path"]
             write_node = request["Payload"]["write_node"]
             args = self.get_profile_args(script_path, write_node)
@@ -86,7 +99,7 @@ class OceanDatabase:
 
             tick_times.append(time.time() - loop_start)  ### Do an average over how long we take per loop
             if len(tick_times) > 100:
-                print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
+                # print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
                 tick_times = []
 
 class Node:
