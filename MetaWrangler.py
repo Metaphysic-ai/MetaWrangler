@@ -511,6 +511,7 @@ class MetaWrangler():
 
         os.environ["METAWRANGLER_PATH"] = os.path.dirname(__file__)
         os.environ["METAWRANGLER_CALLBACKS"] = os.path.dirname(__file__) + "/callbacks/nuke"
+        print(os.environ["METAWRANGLER_PATH"], os.environ["METAWRANGLER_CALLBACKS"])
 
         sandbox_flag_str = " | (Sandbox Mode)" if sandbox else ""
         print(f"MetaWrangler Service is listening on {self.get_local_ip()}:{port}{sandbox_flag_str}")
