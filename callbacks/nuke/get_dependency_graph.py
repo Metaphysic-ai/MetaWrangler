@@ -25,15 +25,15 @@ root = f"{os.getenv('PROJECT_ROOT')}"
 os.environ['PIPELINE_ROOT'] = root
 
 ##Pluggin path##
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/gizmos' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/python' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/gizmos' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/python' )
 # nuke.pluginAddPath( './Python' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/plugins' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/plugins/animatedSnap3D' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/gizmos/backdrops' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/fonts' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/icons' )
-nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/callbacks' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/plugins' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/plugins/animatedSnap3D' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/gizmos/backdrops' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/fonts' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/icons' )
+sys.path.insert(0, '${PROJECT_ROOT}/software/nuke/callbacks' )
 
 
 # nuke.pluginAddPath('X:/PROJECTS/nuke/')
