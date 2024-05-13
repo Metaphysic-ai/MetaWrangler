@@ -8,17 +8,9 @@ sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke/python")
 sys.path.insert(0, "/mnt/x/PROJECTS/software/shotgrid/tk-core/python")
 sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke")
 
-if os.name == "nt":
-    root =  "X:/PROJECTS"
-    os.environ['PROJECT_ROOT'] = root
-    dl_root =  "C:/Program Files/Thinkbox/Deadline10/bin"
-    os.environ['DEADLINE_PATH'] = dl_root
-if os.name == "posix":
-    if not os.getenv("PROJECT_ROOT"):
-        root =  "/mnt/data/DGX_SHARE/SHOTGRID_SYNC/PROJECTS"
-        os.environ['PROJECT_ROOT'] = root
-        dl_root =  "/opt/Thinkbox/Deadline10/bin"
-        os.environ['DEADLINE_PATH'] = dl_root
+dl_root =  "/opt/Thinkbox/Deadline10/bin"
+os.environ['DEADLINE_PATH'] = dl_root
+os.environ['PROJECT_ROOT'] = "mnt/x/PROJECTS"
 
 # pipeline_root = '/'.join(nuke_env.split('/')[:-1]) + '/'
 root = f"{os.getenv('PROJECT_ROOT')}"
@@ -52,6 +44,8 @@ if os.name == "nt":
     nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/3DE4/windows/'))
 if os.name == "posix":
     nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/3DE4/linux/'))
+
+print(sys.path)
 
 import sgtk
 import Deadline_sgConvertToWrite
