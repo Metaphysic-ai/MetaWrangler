@@ -1,6 +1,8 @@
 import nuke
 import sys
+import os
 script_path = sys.argv[0]
+os.environ["NUKE_INTERACTIVE"] = "1"
 nuke.scriptOpen(script_path)
 
 def send_dependency_graph():
