@@ -1,16 +1,16 @@
 from sentence_transformers import SentenceTransformer, util
 import re
-from sgt import SGT
-import random
-import torch
-from sklearn.preprocessing import normalize
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
-
-from pathlib import Path
-from llama_index.readers.file import PyMuPDFReader
-import numpy as np
+# from sgt import SGT
+# import random
+# import torch
+# from sklearn.preprocessing import normalize
+# from sklearn.decomposition import PCA
+# from sklearn.cluster import KMeans
+# import matplotlib.pyplot as plt
+#
+# from pathlib import Path
+# from llama_index.readers.file import PyMuPDFReader
+# import numpy as np
 
 class NukeScript():
     def __init__(self, script_path):

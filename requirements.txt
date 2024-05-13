@@ -1,9 +1,10 @@
 GPUtil==1.4.0
-langchain==0.1.17
-langchain_community==0.0.36
-llama_index==0.10.33
-numpy==1.24.4
-pandas==2.0.3
+GPUtil==1.4.0
+hypothesis==6.100.5
+pandas==2.2.2
 psutil==5.9.8
 pyOpenSSL==24.1.0
+pyOpenSSL==24.1.0
+pytest==8.2.0
 sentence_transformers==2.6.1
+torch==2.3.0
