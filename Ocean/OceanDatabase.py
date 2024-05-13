@@ -1,4 +1,3 @@
-from graphlib import TopologicalSorter
 from managers.NukeManager import NukeManager
 import re
 import socket
