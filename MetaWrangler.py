@@ -482,6 +482,7 @@ class MetaWrangler():
         client_socket.close()
 
         if request.get("Type") == "HandShake":
+            print(f"/opt/Nuke/Nuke14.0v2/Nuke14.0 -t {request['Payload']}")
             subprocess.Popen([f"/opt/Nuke/Nuke14.0v2/Nuke14.0 -t {request['Payload']}"], shell=True) # , stdout=subprocess.DEVNULL
 
         if request.get("Type") == "PreCalc":
