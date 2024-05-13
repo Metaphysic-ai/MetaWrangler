@@ -7,6 +7,52 @@ import json
 sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke/python")
 sys.path.insert(0, "/mnt/x/PROJECTS/software/shotgrid/tk-core/python")
 sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke")
+
+if os.name == "nt":
+    root =  "X:/PROJECTS"
+    os.environ['PROJECT_ROOT'] = root
+    dl_root =  "C:/Program Files/Thinkbox/Deadline10/bin"
+    os.environ['DEADLINE_PATH'] = dl_root
+if os.name == "posix":
+    if not os.getenv("PROJECT_ROOT"):
+        root =  "/mnt/data/DGX_SHARE/SHOTGRID_SYNC/PROJECTS"
+        os.environ['PROJECT_ROOT'] = root
+        dl_root =  "/opt/Thinkbox/Deadline10/bin"
+        os.environ['DEADLINE_PATH'] = dl_root
+
+# pipeline_root = '/'.join(nuke_env.split('/')[:-1]) + '/'
+root = f"{os.getenv('PROJECT_ROOT')}"
+os.environ['PIPELINE_ROOT'] = root
+
+##Pluggin path##
+nuke.pluginAddPath( './gizmos' )
+nuke.pluginAddPath( './python' )
+# nuke.pluginAddPath( './Python' )
+nuke.pluginAddPath( './plugins' )
+nuke.pluginAddPath( './plugins/animatedSnap3D' )
+nuke.pluginAddPath( './gizmos/backdrops' )
+nuke.pluginAddPath( './fonts' )
+nuke.pluginAddPath( './icons' )
+nuke.pluginAddPath( './callbacks' )
+
+
+# nuke.pluginAddPath('X:/PROJECTS/nuke/')
+# nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/NNSuperResolution'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/NNFlowVector'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/NukeSurvivalToolkit'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/pixelfudger3'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/RIFE'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/python/utils'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/python/utils/rvSync'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/python/utils/animation/'))
+nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/RawPredTransformOp/')) #TEMP FOR TESTING
+if os.name == "nt":
+    nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/3DE4/windows/'))
+if os.name == "posix":
+    nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/3DE4/linux/'))
+
 import sgtk
 import Deadline_sgConvertToWrite
 Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
