@@ -6,6 +6,7 @@ import json
 
 sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke/python")
 sys.path.insert(0, "/mnt/x/PROJECTS/software/shotgrid/tk-core/python")
+sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke")
 import sgtk
 import Deadline_sgConvertToWrite
 Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
