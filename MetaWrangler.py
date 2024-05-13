@@ -481,9 +481,13 @@ class MetaWrangler():
         client_socket.send(response.encode('utf-8'))
         client_socket.close()
 
+        if request.get("Type") == "HandShake":
+            subprocess.Popen(["/opt/Nuke/Nuke14.0v2/Nuke14.0", "-t", request["Payload"]])
+
         if request.get("Type") == "PreCalc":
             ### When a user opens a nuke script, we precalculate the profile (and spin up a worker?) if there is room.
-            self.precalc_script(request["Payload"])
+            print(request["Payload"])
+            # self.precalc_script(request["Payload"])
 
         if request.get("Type") == "NewJobSubmission":
             submitted_nuke_script, write_nodes = request["Payload"]
@@ -504,6 +508,9 @@ class MetaWrangler():
         server_socket.bind((host, port))
         server_socket.listen(20)
         server_socket.setblocking(False)
+
+        os.environ["METAWRANGLER_PATH"] = os.path.dirname(__file__)
+        os.environ["METAWRANGLER_CALLBACKS"] = os.path.dirname(__file__) + "/callbacks/nuke"
 
         sandbox_flag_str = " | (Sandbox Mode)" if sandbox else ""
         print(f"MetaWrangler Service is listening on {self.get_local_ip()}:{port}{sandbox_flag_str}")
