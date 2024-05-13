@@ -17,6 +17,7 @@ for node in nuke.allNodes("Write", recurseGroups=True):
     write_nodes.append(node)
 for node in nuke.allNodes("WriteTank", recurseGroups=True):
     write_nodes.append(node)
+print("WRITE_NODES", write_nodes)
 
 def get_dependencies(node, write_nodes):
     seen = set()
@@ -44,6 +45,7 @@ def get_dependencies(node, write_nodes):
     return nodes
 
 for node in write_nodes:
+    print(get_dependencies(node, write_nodes))
     payload_dict[nuke.root().name()][node.name()] = get_dependencies(node, write_nodes)
 
 try:
