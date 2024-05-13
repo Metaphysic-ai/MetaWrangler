@@ -482,7 +482,7 @@ class MetaWrangler():
         client_socket.close()
 
         if request.get("Type") == "HandShake":
-            subprocess.Popen(["/opt/Nuke/Nuke14.0v2/Nuke14.0", "-t", request["Payload"]])
+            subprocess.Popen(["/opt/Nuke/Nuke14.0v2/Nuke14.0", "-t", request["Payload"]]) # , stdout=subprocess.DEVNULL
 
         if request.get("Type") == "PreCalc":
             ### When a user opens a nuke script, we precalculate the profile (and spin up a worker?) if there is room.
