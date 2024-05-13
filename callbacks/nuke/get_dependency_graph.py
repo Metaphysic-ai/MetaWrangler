@@ -25,15 +25,15 @@ root = f"{os.getenv('PROJECT_ROOT')}"
 os.environ['PIPELINE_ROOT'] = root
 
 ##Pluggin path##
-nuke.pluginAddPath( './gizmos' )
-nuke.pluginAddPath( './python' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/gizmos' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/python' )
 # nuke.pluginAddPath( './Python' )
-nuke.pluginAddPath( './plugins' )
-nuke.pluginAddPath( './plugins/animatedSnap3D' )
-nuke.pluginAddPath( './gizmos/backdrops' )
-nuke.pluginAddPath( './fonts' )
-nuke.pluginAddPath( './icons' )
-nuke.pluginAddPath( './callbacks' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/plugins' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/plugins/animatedSnap3D' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/gizmos/backdrops' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/fonts' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/icons' )
+nuke.pluginAddPath( '${PROJECT_ROOT}/software/nuke/callbacks' )
 
 
 # nuke.pluginAddPath('X:/PROJECTS/nuke/')
