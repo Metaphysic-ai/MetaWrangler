@@ -4,6 +4,7 @@ import os
 import socket
 import json
 
+sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke/python")
 import Deadline_sgConvertToWrite
 Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
 ### Attempt to connect to MetaWrangler. Skip if connection fails.
