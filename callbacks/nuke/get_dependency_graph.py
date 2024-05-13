@@ -27,27 +27,10 @@ sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/fonts' )
 sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/icons' )
 sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/callbacks' )
 
-
-# nuke.pluginAddPath('X:/PROJECTS/nuke/')
-# nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/NNSuperResolution'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/NNFlowVector'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/NukeSurvivalToolkit'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/pixelfudger3'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/RIFE'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/python/utils'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/python/utils/rvSync'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/python/utils/animation/'))
-nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/RawPredTransformOp/')) #TEMP FOR TESTING
-if os.name == "nt":
-    nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/3DE4/windows/'))
-if os.name == "posix":
-    nuke.pluginAddPath(os.path.expandvars('${PROJECT_ROOT}/software/nuke/plugins/3DE4/linux/'))
-
 print(sys.path)
 
 import sgtk
+import backup_manager
 import Deadline_sgConvertToWrite
 Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
 ### Attempt to connect to MetaWrangler. Skip if connection fails.
