@@ -30,7 +30,7 @@ sys.path.insert(0, f'{os.getenv("PROJECT_ROOT")}/software/nuke/callbacks' )
 print(sys.path)
 
 import sgtk
-import backup_manager
+from callbacks import backup_manager
 import Deadline_sgConvertToWrite
 Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
 ### Attempt to connect to MetaWrangler. Skip if connection fails.
