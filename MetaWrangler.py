@@ -62,7 +62,8 @@ class MetaWrangler():
     def __init__(self):
         self.SUPPORTED_REQUEST_TYPES = [
             "PreCalc",
-            "NewJobSubmission"
+            "NewJobSubmission",
+            "HandShake"
         ]
         self.con = Connect(self.get_local_ip(), 8081)
         self.task_event_stack = []

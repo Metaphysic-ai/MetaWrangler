@@ -1,12 +1,6 @@
 import nuke
 import sys
 import os
-script_path = sys.argv[0]
-print(sys.argv)
-print(script_path)
-print(nuke.rawArgs)
-os.environ["NUKE_INTERACTIVE"] = "1"
-print(nuke.scriptOpen(script_path))
 
 def send_dependency_graph():
     payload_dict = {nuke.root().name(): {}}
