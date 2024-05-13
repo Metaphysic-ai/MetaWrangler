@@ -5,6 +5,8 @@ import socket
 import json
 
 sys.path.insert(0, "/mnt/x/PROJECTS/software/nuke/python")
+sys.path.insert(0, "/mnt/x/PROJECTS/software/shotgrid/tk-core/python")
+import sgtk
 import Deadline_sgConvertToWrite
 Deadline_sgConvertToWrite.Deadline_sgConvertToWrite()
 ### Attempt to connect to MetaWrangler. Skip if connection fails.
