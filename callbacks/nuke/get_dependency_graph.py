@@ -9,7 +9,8 @@ script_path = None
 
 nuke_mng = NukeManager()
 for nuke_file in os.listdir(nuke_mng.tmp_dir):
-    script_path = os.path.join(nuke_mng.tmp_dir, nuke_file)
+    if nuke_file.endswith(".nk"):
+        script_path = os.path.join(nuke_mng.tmp_dir, nuke_file)
 
 # "/mnt/x/PROJECTS/romulus/sequences/wro/wro_1860/comp/work/nuke/Comp-WIP/wro_1860_MetaPiPRomUnitTest.v006.nk"
 if script_path:
