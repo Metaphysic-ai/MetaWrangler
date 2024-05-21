@@ -1,22 +1,23 @@
 from sentence_transformers import SentenceTransformer, util
 import re
-# from sgt import SGT
-# import random
-# import torch
-# from sklearn.preprocessing import normalize
-# from sklearn.decomposition import PCA
-# from sklearn.cluster import KMeans
-# import matplotlib.pyplot as plt
-#
-# from pathlib import Path
-# from llama_index.readers.file import PyMuPDFReader
-# import numpy as np
+import numpy as np
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics.pairwise import cosine_similarity
 
 class NukeScript():
     def __init__(self, script_path):
         self.script_path = script_path
         self.write_nodes = {}
+        self.write_node_embeddings = {}
+        self.job_embeddings = {}
         self.write_dependency_dict = {}
+
+class Node():
+    def __init(self):
+        self.name = None
+        self.embedding = None
+        self.weight = None
+
 class VectorStoreUtils():
 
     def __init__(self):
@@ -28,11 +29,102 @@ class VectorStoreUtils():
         self.scripts_to_parse = []
         self.script_embeddings = []
 
+    def vectorize(self, nuke_script):
+        write_node_keys = nuke_script.write_nodes.keys()
+        for write_node in write_node_keys:
+            nuke_script.write_node_embeddings[write_node] = {}
+            nodes = []
+            for node_name in nuke_script.write_nodes[write_node]:
+                node = Node()
+                node.name = node_name
+                nodes.append(node)
+            node_name_embeddings = self.embed_model.encode([node.name for node in nodes])
+            for node, embedding in zip(nodes, node_name_embeddings):
+                nuke_script.write_node_embeddings[write_node][node.name] = embedding
+        self.weighted_average(nuke_script)
+        self.adjust_for_pca(nuke_script)
+        query_embedding = []
+        rest_embeddings = {}
+        for k, v in nuke_script.job_embeddings.items():
+            if k == "ShotGridWrite15":
+                query_embedding = v
+            else:
+                rest_embeddings[k] = v
+                print(k, v.shape, v[:5])
+        similarities, keys = self.find_most_similar(query_embedding, rest_embeddings)
+        paired = list(zip(similarities, keys))
+        paired_sorted = sorted(paired, key=lambda x: x[0])
+        sorted_similarity_scores, sorted_keys = zip(*paired_sorted)
+
+
+    def weighted_average(self, nuke_script):
+        write_node_keys = nuke_script.write_nodes.keys()
+        for write_node in write_node_keys:
+            graph_dict = nuke_script.write_nodes[write_node]
+            nuke_script.job_embeddings[write_node] = {}
+
+            a = 0.001
+            total_node_num = sum(graph_dict.values())
+            word_frequencies = {word: freq / total_node_num for word, freq in graph_dict.items()}
+
+            embedding_matrix = np.zeros((len(graph_dict), 384))
+            weights = []
+
+            for i, (node_name, freq) in enumerate(graph_dict.items()):
+                if node_name in nuke_script.write_node_embeddings[write_node]:
+                    embedding_matrix[i] = nuke_script.write_node_embeddings[write_node][node_name]
+                    weights.append(a / (a + word_frequencies[node_name]))
+
+            weights = np.array(weights)
+            nuke_script.job_embeddings[write_node] = np.dot(weights, embedding_matrix) / np.sum(weights)
+
+    def adjust_for_pca(self, nuke_script):
+        write_node_keys = nuke_script.write_nodes.keys()
+        write_nodes = []
+        adjusted_embeddings = []
+        for write_node in write_node_keys:
+            write_nodes.append(write_node)
+            adjusted_embeddings.append(nuke_script.job_embeddings[write_node])
+        adjusted_embeddings = np.array(adjusted_embeddings)
+        adjusted_embeddings = self.remove_pc(self.compute_pc(adjusted_embeddings))
+        for write_node, adjusted_embedding in zip(write_nodes, adjusted_embeddings):
+            nuke_script.job_embeddings[write_node] = adjusted_embedding
+
+    def compute_pc(self, X, npc=1):
+        svd = TruncatedSVD(n_components=npc, n_iter=7, random_state=0)
+        svd.fit(X)
+        return svd.components_
+
+    def remove_pc(self, X, npc=1):
+        pc = self.compute_pc(X, npc)
+        if npc == 1:
+            XX = X - X.dot(pc.transpose()) * pc
+        else:
+            XX = X - X.dot(pc.transpose()).dot(pc)
+        return XX
+
+    def compute_cosine_similarity(self, vec1, vec2):
+        vec1 = vec1.reshape(1, -1)
+        vec2 = vec2.reshape(1, -1)
+        return cosine_similarity(vec1, vec2)[0][0]
+
+    def find_most_similar(self, query_embedding, all_nodes):
+        max_similar = -1
+        similar_key = ""
+        similarities =
+
+        for key, embedding in all_nodes.items():
+            similarity = self.compute_cosine_similarity(query_embedding, embedding)
+            if similarity > max_similar:
+                max_similar = similarity
+                similar_key = key
+
+        return max_similar, similar_key
+
     def get_node_sequence(self, nodes):
         node_sequence = []
         for node in nodes:
             node_sequence.append(node.type)
-        print(len(set(node_sequence)))
         return node_sequence
 
     def accumulate_nodes(self, nodes):
@@ -55,6 +147,7 @@ class VectorStoreUtils():
         return nodes_accum
 
     def parse_dependency_dict(self, dependency_dict):
+        nuke_script = None
         for script, write_dependencies in dependency_dict.items():
             nuke_script = NukeScript(script)
             nuke_script.write_dependency_dict = dependency_dict
@@ -62,11 +155,12 @@ class VectorStoreUtils():
                 nodes_accumulated = self.accumulate_nodes(write_dependencies[write_node])
                 nuke_script.write_nodes[write_node] = nodes_accumulated
             print("Script:", nuke_script.script_path)
-            print("Dependencies:")
-            print(nuke_script.write_dependency_dict)
+            # print("Dependencies:")
+            # print(nuke_script.write_dependency_dict)
             print("Accumulated:")
-            print(nuke_script.write_nodes)
-            # self.scripts_to_parse.append(nuke_script)
+            for k, v in nuke_script.write_nodes.items():
+                print(k, v)
+        return nuke_script
 
     def get_vector_db(self, reload=True):
         if reload:

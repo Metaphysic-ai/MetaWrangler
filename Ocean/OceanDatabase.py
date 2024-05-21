@@ -3,6 +3,7 @@ import re
 import socket
 import json
 from datetime import datetime
+import numpy as np
 import time
 import subprocess
 
@@ -17,7 +18,22 @@ class OceanDatabase:
         self.vector_utils = vector_utils
 
     def add_to_database(self, script_dependency_dict):
-        self.vector_utils.parse_dependency_dict(script_dependency_dict)
+        nuke_script = self.vector_utils.parse_dependency_dict(script_dependency_dict)
+        self.vector_utils.vectorize(nuke_script)
+        nodes = set()
+        for k, v in nuke_script.write_node_embeddings.items():
+            for node_name, embedding in nuke_script.write_node_embeddings[k].items():
+                nodes.add(node_name)
+        for check_node in nodes:
+            for k, v in nuke_script.write_node_embeddings.items():
+                for node_name, embedding in nuke_script.write_node_embeddings[k].items():
+                    if node_name == check_node:
+                        if "compare" not in locals():
+                            compare = embedding
+                        elif not np.allclose(compare, embedding, atol=1e-05):
+                            print(k, check_node, np.allclose(compare, embedding, atol=1e-05), "Compare embedding:", compare[:5], "Node:", embedding[:5])
+            del compare
+
 
     def get_profile_args(self, script, write_nodes):
         args = {
@@ -101,7 +117,7 @@ class OceanDatabase:
                 # print("### DEBUG: Estimated time spent per loop:", sum(tick_times) / len(tick_times), "Seconds.")
                 tick_times = []
 
-class Node:
+class Node: # TODO: deprecated.
     def __init__(self, name="", type="", knobs=[], num_inputs=None):
         self.name = name
         self.type = type
@@ -111,6 +127,7 @@ class Node:
         self.root_node = None
         self.out_nodes = []
         self.in_nodes = []
+
     def __repr__(self):
         return f'Node(\'{self.type}\', {self.name})'
 
@@ -135,6 +152,7 @@ class Graph:
                 self.simplifiedDAG[node.type] = 1
             else:
                 self.simplifiedDAG[node.type] += 1
+
     def fill_graph_from_script_simplified(self, ignore_backdrops=True, ignore_dots=True):
         start_parse = False
         bracket_stack = 0

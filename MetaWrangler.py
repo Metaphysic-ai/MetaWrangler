@@ -8,7 +8,7 @@ from managers.ContainerManager import ContainerManager
 from managers.JobManager import JobManager
 from managers.NukeManager import NukeManager
 from Ocean.OceanDatabase import OceanDatabase
-from Ocean.embedder import VectorStoreUtils
+from Ocean.vector_utils import VectorStoreUtils
 import logging
 from utils import DeadlineUtility
 import json
@@ -590,7 +590,7 @@ if __name__ == "__main__":
     def debug_mode():
         ### This is where I manually check functions
         start_time = time.time()
-        nuke_mng = NukeManager("/mnt/x/PROJECTS/pipeline/sequences/ABC/ABC_0000/comp/work/nuke/MetaWranglerUnitTest/ABC_0000_RawPredTransform224.v004.nk")
+        nuke_mng = NukeManager("/mnt/x/PROJECTS/romulus/sequences/wro/wro_9040/comp/work/nuke/Comp-CA/wro_9040_Comp.v032.nk")
         out = nuke_mng.get_write_dependencies()
         ocean.add_to_database(out)
         print("Parsing this script took:", time.time()-start_time)
