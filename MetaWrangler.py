@@ -587,13 +587,26 @@ if __name__ == "__main__":
         ocean.run()
         wrangler.run(sandbox)
 
+    def simulate_mode():
+        container_manager = ContainerManager(wrangler)
+        mem_list = [2,2,2,2,2,4,4,4,4,4,8,8,8,8,8,16,16,16,16,32,32]
+        cores_list = [1,2,4,8,16,1,2,4,8,2,1,2,4,8,1,1,2,4,4,8,16]
+        gpu_list = [0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0]
+        for n in range(len(mem_list)):
+            mem = mem_list[n]
+            cores = cores_list[n]
+            gpu = gpu_list[n]
+            container_manager.spawn_container("renderserversim", mem=mem, cpus=cores, gpu=gpu)
+
     def debug_mode():
         ### This is where I manually check functions
         start_time = time.time()
         nuke_mng = NukeManager("/mnt/x/PROJECTS/romulus/sequences/wro/wro_9040/comp/work/nuke/Comp-CA/wro_9040_Comp.v032.nk")
+        nuke_mng = NukeManager("/mnt/x/PROJECTS/itch/sequences/001/001_0031/metaface/work/nuke/Metaface-Plate/001_0031_plate.v001.nk")
         out = nuke_mng.get_write_dependencies()
         ocean.add_to_database(out)
         print("Parsing this script took:", time.time()-start_time)
+        # deadline_api.get
 
     if len(sys.argv) == 1:
         run_mode()
@@ -604,6 +617,8 @@ if __name__ == "__main__":
             run_mode(sandbox=True)
         elif sys.argv[1] == "--debug":
             debug_mode()
+        elif sys.argv[1] == "--simulate":
+            simulate_mode()
         else:
             print("Invalid option. Usage: python MetaWrangler.py [--run | --run_sandbox | --debug ]")
             sys.exit(1)

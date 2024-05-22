@@ -20,6 +20,12 @@ class OceanDatabase:
     def add_to_database(self, script_dependency_dict):
         nuke_script = self.vector_utils.parse_dependency_dict(script_dependency_dict)
         self.vector_utils.vectorize(nuke_script)
+        for write_node, write_node_dict in nuke_script.write_nodes.items():
+            profile = self.get_profile_args(nuke_script, write_node, write_node_dict)
+            print(profile)
+
+    def check_node_embedding_validity(self, nuke_script):
+        # Check if the same nodes from different dependency graphs result in the same embeddings (within tolerance.)
         nodes = set()
         for k, v in nuke_script.write_node_embeddings.items():
             for node_name, embedding in nuke_script.write_node_embeddings[k].items():
@@ -35,19 +41,28 @@ class OceanDatabase:
             del compare
 
 
-    def get_profile_args(self, script, write_nodes):
+    def get_profile_args(self, nuke_script, write_node, write_node_dict):
+        import uuid
         args = {
-                "id": 0,
-                "info": {"estimated_success_rate": 1.0},
-                "mem": 4,
-                "cpus": 2,
+                "_info": {
+                    "_OG_SCRIPT": nuke_script.script_path,
+                    "id": str(uuid.uuid4()),
+                    "estimated_success_rate": 1.0,
+                    "estimate_render_time": 10.0,
+                    "job_embedding": nuke_script.job_embeddings[write_node],
+                },
+                "mem": 2,
+                "cpus": 1,
                 "gpu": False,
                 "batch_size": 10,
                 "min_time": 0,
                 "max_time": 10,
                 "pcomp_flag": False,
-                "creation_time": str(datetime.now().strftime('%y%m%d_%H%M%S'))
+                "creation_time": str(datetime.now().strftime('%y%m%d_%H%M%S')),
                 }
+        for node, quantity in write_node_dict.items():
+            args["Node_"+node] = quantity
+        args["_OG_WRITE"] = write_node
         return args
 
     def get_local_ip(self):

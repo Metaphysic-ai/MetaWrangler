@@ -3,6 +3,7 @@ import re
 import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy import sparse
 
 class NukeScript():
     def __init__(self, script_path):
@@ -109,17 +110,36 @@ class VectorStoreUtils():
         return cosine_similarity(vec1, vec2)[0][0]
 
     def find_most_similar(self, query_embedding, all_nodes):
-        max_similar = -1
-        similar_key = ""
-        similarities =
+        from datetime import datetime
+        start_time = datetime.now()
+        similarities = []
+        keys = []
 
         for key, embedding in all_nodes.items():
             similarity = self.compute_cosine_similarity(query_embedding, embedding)
-            if similarity > max_similar:
-                max_similar = similarity
-                similar_key = key
+            similarities.append(similarity)
+            keys.append(key)
 
-        return max_similar, similar_key
+        print("Similarity search took:", datetime.now() - start_time)
+        return similarities, keys
+
+
+    def find_most_similar_vectorized(self, query_embedding, all_nodes):
+        from numpy import dot
+        from numpy.linalg import norm
+        max_similar = -1
+        similar_key = ""
+        node_matrix = []
+        node_matrix.append(query_embedding)
+        for k, v in all_nodes.items():
+            node_matrix.append(v)
+        node_matrix = np.array(node_matrix)
+        similarity = np.dot(node_matrix, node_matrix.T)
+
+        cos_sim = 1 - dot(node_matrix, node_matrix.T)/(norm(node_matrix)*norm(node_matrix))
+        print(cos_sim[0])
+
+        return [0, 1], "..." # max_similar, similar_key
 
     def get_node_sequence(self, nodes):
         node_sequence = []
